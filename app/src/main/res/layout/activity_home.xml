@@ -70,8 +70,8 @@
             tools:text="2026/06/16  周二  15:01" />
         <ImageView
             android:id="@+id/btn_home_api_switch"
-            android:layout_width="@dimen/vs_56"
-            android:layout_height="@dimen/vs_56"
+            android:layout_width="@dimen/vs_60"
+            android:layout_height="@dimen/vs_60"
             android:layout_marginStart="@dimen/vs_10"
             android:background="@drawable/shape_live_resolution_badge"
             android:clickable="true"
