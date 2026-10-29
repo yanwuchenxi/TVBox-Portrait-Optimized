@@ -3,37 +3,40 @@ package com.github.tvbox.osc.util;
 import android.Manifest;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
+import android.provider.Settings;
 
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 /**
- * 存储权限适配（配合 targetSdk 33）
+ * 存储权限适配（targetSdk 33/34）
  * <p>
- * Android 13+ 媒体权限拆分；Android 10+ 分区存储。
- * 本助手提供统一判断与请求入口，避免各页面重复 if-else。
+ * 媒体权限（READ_MEDIA_*）只能访问音视频图片，不能列出 json/txt 等配置文件。
+ * 本地配置选择需 Android 11+ 的「所有文件访问」MANAGE_EXTERNAL_STORAGE。
  */
 public final class StoragePermissionHelper {
 
     public static final int REQUEST_STORAGE = 0x5010;
+    public static final int REQUEST_MANAGE_STORAGE = 0x5012;
 
     private StoragePermissionHelper() {
     }
 
-    /** 是否已具备当前系统所需的读存储能力 */
-    public static boolean hasReadPermission(Context context) {
-        if (Build.VERSION.SDK_INT >= 33) {
-            // 视频类应用主要读视频；若还要读图片可追加 READ_MEDIA_IMAGES
-            return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO)
-                    == PackageManager.PERMISSION_GRANTED
-                    || ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_AUDIO)
-                    == PackageManager.PERMISSION_GRANTED
-                    || ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
-                    == PackageManager.PERMISSION_GRANTED;
+    /** 是否已具备浏览任意本地文件（含配置）的能力 */
+    public static boolean hasAllFilesAccess(Context context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            return Environment.isExternalStorageManager();
         }
+        return hasLegacyReadPermission(context);
+    }
+
+    /** 传统读权限（Android 10 及以下） */
+    public static boolean hasLegacyReadPermission(Context context) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED;
@@ -41,10 +44,25 @@ public final class StoragePermissionHelper {
         return true;
     }
 
-    /** 是否可写外部存储（传统路径；分区存储下多数场景不需要） */
+    /**
+     * 媒体读权限（仅音视频图片，不能读配置文件）。
+     * 保留供播放本地媒体等场景使用。
+     */
+    public static boolean hasReadPermission(Context context) {
+        if (Build.VERSION.SDK_INT >= 33) {
+            return ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_VIDEO)
+                    == PackageManager.PERMISSION_GRANTED
+                    || ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_AUDIO)
+                    == PackageManager.PERMISSION_GRANTED
+                    || ContextCompat.checkSelfPermission(context, Manifest.permission.READ_MEDIA_IMAGES)
+                    == PackageManager.PERMISSION_GRANTED
+                    || hasLegacyReadPermission(context);
+        }
+        return hasLegacyReadPermission(context);
+    }
+
     public static boolean hasWritePermission(Context context) {
-        if (Build.VERSION.SDK_INT >= 30) {
-            // Android 11+ 写公共目录需 MANAGE_EXTERNAL_STORAGE 或使用 MediaStore/SAF
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             return Environment.isExternalStorageManager()
                     || ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE)
                     == PackageManager.PERMISSION_GRANTED;
@@ -57,32 +75,58 @@ public final class StoragePermissionHelper {
     }
 
     /**
-     * 请求读权限（按 API 级别选择权限组）
-     * @return true 表示已有权限，无需请求
+     * 请求「能列出配置文件」的权限：
+     * - API 30+：引导系统「所有文件访问」设置页
+     * - 更低：请求 READ/WRITE_EXTERNAL_STORAGE
+     * @return true 已有权限；false 已发起请求
+     */
+    public static boolean requestAllFilesAccessIfNeeded(Activity activity) {
+        if (hasAllFilesAccess(activity)) {
+            return true;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            try {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
+                intent.setData(Uri.parse("package:" + activity.getPackageName()));
+                activity.startActivityForResult(intent, REQUEST_MANAGE_STORAGE);
+            } catch (Throwable t) {
+                try {
+                    Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                    activity.startActivityForResult(intent, REQUEST_MANAGE_STORAGE);
+                } catch (Throwable t2) {
+                    // 最后退回传统权限请求
+                    requestReadIfNeeded(activity);
+                }
+            }
+            return false;
+        }
+        return requestReadIfNeeded(activity);
+    }
+
+    /**
+     * 请求媒体读权限（不能用于配置文件浏览）
+     * @return true 已有权限
      */
     public static boolean requestReadIfNeeded(Activity activity) {
         if (hasReadPermission(activity)) {
             return true;
         }
         if (Build.VERSION.SDK_INT >= 33) {
-            ActivityCompat.requestPermissions(activity, new String[]{
-                    Manifest.permission.READ_MEDIA_VIDEO,
-                    Manifest.permission.READ_MEDIA_AUDIO
-            }, REQUEST_STORAGE);
+            ActivityCompat.requestPermissions(activity,
+                    new String[]{
+                            Manifest.permission.READ_MEDIA_VIDEO,
+                            Manifest.permission.READ_MEDIA_AUDIO,
+                            Manifest.permission.READ_MEDIA_IMAGES
+                    },
+                    REQUEST_STORAGE);
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            ActivityCompat.requestPermissions(activity, new String[]{
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-            }, REQUEST_STORAGE);
+            ActivityCompat.requestPermissions(activity,
+                    new String[]{
+                            Manifest.permission.READ_EXTERNAL_STORAGE,
+                            Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    },
+                    REQUEST_STORAGE);
         }
         return false;
-    }
-
-    /** 供 Manifest 参考的权限名（API 33+） */
-    public static String[] mediaPermissionsApi33() {
-        return new String[]{
-                Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.READ_MEDIA_AUDIO
-        };
     }
 }
