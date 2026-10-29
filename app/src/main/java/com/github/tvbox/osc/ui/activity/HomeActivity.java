@@ -285,10 +285,21 @@ public class HomeActivity extends BaseActivity {
                 return !((GridFragment) baseLazyFragment).isLoad();
             }
         });
+        // 点击站点名：选择首页数据源；长按：清缓存并重载
         tvName.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 FastClickCheckUtil.check(v);
+                if (dataInitOk && jarInitOk) {
+                    showSiteSwitch();
+                } else {
+                    Toast.makeText(mContext, "数据源加载中，请稍候", Toast.LENGTH_SHORT).show();
+                }
+            }
+        });
+        tvName.setOnLongClickListener(new View.OnLongClickListener() {
+            @Override
+            public boolean onLongClick(View v) {
                 SourceBean homeSource = ApiConfig.get().getHomeSourceBean();
                 if (dataInitOk && jarInitOk && homeSource != null) {
                     String jar = homeSource.getJar();
@@ -298,7 +309,7 @@ public class HomeActivity extends BaseActivity {
                     File cspCacheDir = new File(FileUtils.getFilePath() + "/csp/" + MD5.string2MD5(jarSource) + ".jar");
                     File jarCacheDir = new File(FileUtils.getCachePath() + "/jar/" + MD5.string2MD5(jarSource) + ".jar");
                     File jarFullCacheDir = new File(FileUtils.getCachePath() + "/jar/" + MD5.string2MD5(jarUrl) + ".jar");
-                    Toast.makeText(mContext, "缓存已清除", Toast.LENGTH_LONG).show();
+                    Toast.makeText(mContext, "缓存已清除，正在重载", Toast.LENGTH_LONG).show();
                     new Thread(() -> {
                         try {
                             FileUtils.deleteFile(cspCacheDir);
@@ -311,16 +322,9 @@ public class HomeActivity extends BaseActivity {
                             e.printStackTrace();
                         }
                     }).start();
-
                 } else {
                     jumpActivity(SettingActivity.class);
                 }
-            }
-        });
-        tvName.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                jumpActivity(SettingActivity.class);
                 return true;
             }
         });

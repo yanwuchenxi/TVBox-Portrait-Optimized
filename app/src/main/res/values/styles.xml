@@ -16,7 +16,7 @@
         <item name="windowNoTitle">true</item>
         <item name="android:keepScreenOn">true</item>
         <!--        <item name="android:windowBackground">@drawable/main_bg</item>-->
-        <item name="android:windowBackground">#0E1726</item>
+        <item name="android:windowBackground">@color/color_deep_navy</item>
     </style>
 
     <!-- 手机竖屏主题：显示状态栏，内容避让状态栏 -->

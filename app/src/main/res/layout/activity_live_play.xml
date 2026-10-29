@@ -387,8 +387,8 @@
                     android:id="@+id/btn_live_play_pause"
                     android:layout_width="@dimen/vs_60"
                     android:layout_height="@dimen/vs_60"
-                    android:layout_gravity="bottom|right"
-                    android:layout_marginRight="@dimen/vs_80"
+                    android:layout_gravity="bottom|left"
+                    android:layout_marginLeft="@dimen/vs_30"
                     android:layout_marginBottom="@dimen/vs_70"
                     android:background="@drawable/shape_live_resolution_badge"
                     android:clickable="true"
@@ -439,11 +439,11 @@
 
                 <ImageView
                     android:id="@+id/img_channel_bar_logo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
+                    android:layout_width="@dimen/vs_60"
+                    android:layout_height="@dimen/vs_60"
                     android:adjustViewBounds="true"
-                    android:maxWidth="@dimen/vs_150"
-                    android:maxHeight="@dimen/vs_48"
+                    android:maxWidth="@dimen/vs_120"
+                    android:maxHeight="@dimen/vs_60"
                     android:scaleType="fitCenter"
                     android:visibility="gone" />
 
@@ -554,17 +554,18 @@
                 android:gravity="center_vertical|right"
                 android:orientation="horizontal">
 
-                <!-- 台标 -->
+                <!-- 台标（接口切换旁小台标已隐藏，保留 id 避免代码 NPE） -->
                 <FrameLayout
-                    android:layout_width="@dimen/vs_35"
-                    android:layout_height="@dimen/vs_35">
+                    android:layout_width="0dp"
+                    android:layout_height="0dp"
+                    android:visibility="gone">
 
                     <FrameLayout
                         android:id="@+id/live_icon_null_bg"
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:background="@drawable/shape_live_resolution_badge"
-                        android:visibility="invisible">
+                        android:visibility="gone">
 
                         <TextView
                             android:id="@+id/live_icon_null_text"
@@ -574,7 +575,7 @@
                             android:singleLine="true"
                             android:textColor="@android:color/white"
                             android:textSize="@dimen/ts_14"
-                            android:visibility="invisible" />
+                            android:visibility="gone" />
                     </FrameLayout>
 
                     <ImageView
@@ -582,7 +583,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="match_parent"
                         android:scaleType="centerInside"
-                        android:visibility="invisible" />
+                        android:visibility="gone" />
                 </FrameLayout>
 
                 <TextView

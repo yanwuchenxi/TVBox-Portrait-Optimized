@@ -53,4 +53,8 @@
 
 
 
+    <!-- 默认深海军蓝背景 -->
+    <color name="color_deep_navy">#0A1628</color>
+    <color name="color_deep_navy_status">#07101C</color>
+
 </resources>

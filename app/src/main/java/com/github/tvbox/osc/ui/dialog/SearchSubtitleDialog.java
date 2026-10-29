@@ -7,6 +7,7 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
@@ -171,7 +172,39 @@ public class SearchSubtitleDialog extends BaseDialog {
         };
         subtitleSearchEt.setOnKeyListener(enterKeyListener);
         subtitleSearchBtn.setOnKeyListener(enterKeyListener);
+        // 点击输入框直接弹系统键盘，避免全屏输入法/二次跳转
+        subtitleSearchEt.setFocusable(true);
+        subtitleSearchEt.setFocusableInTouchMode(true);
+        if (android.os.Build.VERSION.SDK_INT >= 21) {
+            subtitleSearchEt.setShowSoftInputOnFocus(true);
+        }
+        subtitleSearchEt.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                subtitleSearchEt.requestFocus();
+                InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.showSoftInput(subtitleSearchEt, InputMethodManager.SHOW_IMPLICIT);
+                }
+            }
+        });
+        subtitleSearchEt.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    InputMethodManager imm = (InputMethodManager) getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+                    if (imm != null) {
+                        imm.showSoftInput(subtitleSearchEt, InputMethodManager.SHOW_IMPLICIT);
+                    }
+                }
+            }
+        });
         searchAdapter.setNewData(new ArrayList<>());
+        if (getWindow() != null) {
+            getWindow().setSoftInputMode(
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                            | android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
     }
 
     public void setSearchWord(String wd) {
