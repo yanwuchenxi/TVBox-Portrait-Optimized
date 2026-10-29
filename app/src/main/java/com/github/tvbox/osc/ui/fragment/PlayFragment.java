@@ -1313,7 +1313,7 @@ public class PlayFragment extends BaseLazyFragment {
         try {
             JSONArray urls = new JSONArray(qualityResult.optString("url"));
             String url = urls.optString(position * 2 + 1);
-            if (TextUtils.isEmpty(requestUrl)) return false;
+            if (TextUtils.isEmpty(url)) return false;
             String playUrl = qualityResult.optString("playUrl", "");
             String flag = qualityResult.optString("flag");
             boolean parse = qualityResult.optString("parse", "1").equals("1");
