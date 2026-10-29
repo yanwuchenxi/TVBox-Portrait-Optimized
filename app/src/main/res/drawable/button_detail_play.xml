@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：详情页「全屏播放」按钮 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#E6FF8A3D"
+                android:endColor="#CCE05600" />
+            <stroke android:width="@dimen/vs_2" android:color="#66FFFFFF" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#E6FF8A3D"
+                android:endColor="#CCE05600" />
+            <stroke android:width="@dimen/vs_2" android:color="#66FFFFFF" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#CCFF8A3D"
+                android:endColor="#99D95400" />
+            <stroke android:width="@dimen/vs_2" android:color="#33FFFFFF" />
+        </shape>
+    </item>
+</selector>

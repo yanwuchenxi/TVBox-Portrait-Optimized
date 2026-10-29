@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：海报角标（备注/评分） -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="12mm" />
+    <gradient
+        android:angle="270"
+        android:startColor="#B3FFFFFF"
+        android:endColor="#8CFFFFFF" />
+    <stroke android:width="@dimen/vs_2" android:color="#33FFFFFF" />
+</shape>

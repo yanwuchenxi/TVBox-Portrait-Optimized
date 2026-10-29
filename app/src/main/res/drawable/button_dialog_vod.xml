@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：点播弹窗按钮 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true" android:state_pressed="true">
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#590CADE2"
+                android:endColor="#330CADE2" />
+            <stroke android:width="@dimen/vs_2" android:color="#CC0CADE2" />
+        </shape>
+    </item>
+    <item android:state_focused="false" android:state_pressed="true">
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#590CADE2"
+                android:endColor="#330CADE2" />
+            <stroke android:width="@dimen/vs_2" android:color="#CC0CADE2" />
+        </shape>
+    </item>
+    <item android:state_focused="true">
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#590CADE2"
+                android:endColor="#330CADE2" />
+            <stroke android:width="@dimen/vs_2" android:color="#CC0CADE2" />
+        </shape>
+    </item>
+    <item android:state_focused="false" android:state_pressed="false">
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#26FFFFFF"
+                android:endColor="#12FFFFFF" />
+            <stroke android:width="@dimen/vs_2" android:color="#33FFFFFF" />
+        </shape>
+    </item>
+</selector>

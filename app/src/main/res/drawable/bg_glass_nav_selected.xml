@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：导航栏选中项 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="120mm" />
+    <gradient
+        android:angle="270"
+        android:startColor="#4D0CADE2"
+        android:endColor="#260CADE2" />
+    <stroke
+        android:width="@dimen/vs_2"
+        android:color="#990CADE2" />
+</shape>

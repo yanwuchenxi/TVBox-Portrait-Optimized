@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：胶囊按钮（分类、站点标签、筛选等） -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_pressed="true">
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#4D0CADE2"
+                android:endColor="#260CADE2" />
+            <stroke
+                android:width="@dimen/vs_2"
+                android:color="#990CADE2" />
+        </shape>
+    </item>
+    <item android:state_focused="true">
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#4D0CADE2"
+                android:endColor="#260CADE2" />
+            <stroke
+                android:width="@dimen/vs_2"
+                android:color="#990CADE2" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <corners android:radius="40mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#26FFFFFF"
+                android:endColor="#12FFFFFF" />
+            <stroke
+                android:width="@dimen/vs_2"
+                android:color="#33FFFFFF" />
+        </shape>
+    </item>
+</selector>

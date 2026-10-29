@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：海报底部标题遮罩 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners
+        android:bottomLeftRadius="@dimen/vs_14"
+        android:bottomRightRadius="@dimen/vs_14" />
+    <gradient
+        android:angle="270"
+        android:startColor="#00000000"
+        android:centerColor="#8C000000"
+        android:endColor="#D9000000" />
+</shape>

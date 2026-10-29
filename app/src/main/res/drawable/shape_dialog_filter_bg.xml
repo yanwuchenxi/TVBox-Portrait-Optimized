@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：筛选面板 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners
+        android:topLeftRadius="36mm"
+        android:topRightRadius="36mm" />
+    <gradient
+        android:angle="270"
+        android:startColor="#F2202E4A"
+        android:centerColor="#F21A263C"
+        android:endColor="#F2121B2C" />
+    <stroke android:width="@dimen/vs_2" android:color="#4DFFFFFF" />
+</shape>

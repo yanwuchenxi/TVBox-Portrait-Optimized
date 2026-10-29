@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：对话框输入框 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/vs_20" />
+            <gradient
+                android:angle="270"
+                android:startColor="#400CADE2"
+                android:endColor="#1A0CADE2" />
+            <stroke android:width="@dimen/vs_2" android:color="@color/dialog_control_stroke_focused" />
+        </shape>
+    </item>
+    <item android:state_focused="false">
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/vs_20" />
+            <gradient
+                android:angle="270"
+                android:startColor="#2EFFFFFF"
+                android:endColor="#14FFFFFF" />
+            <stroke android:width="@dimen/vs_2" android:color="@color/dialog_panel_stroke" />
+        </shape>
+    </item>
+</selector>

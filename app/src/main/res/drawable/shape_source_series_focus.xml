@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：选集按钮 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape>
+            <corners android:radius="24mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#400CADE2"
+                android:endColor="#1A0CADE2" />
+            <stroke android:width="@dimen/vs_2" android:color="#B30CADE2" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <corners android:radius="24mm" />
+            <gradient
+                android:angle="270"
+                android:startColor="#1FFFFFFF"
+                android:endColor="#0DFFFFFF" />
+            <stroke android:width="@dimen/vs_2" android:color="#26FFFFFF" />
+        </shape>
+    </item>
+</selector>

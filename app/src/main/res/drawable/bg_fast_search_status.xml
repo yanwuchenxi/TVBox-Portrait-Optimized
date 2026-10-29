@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：搜索状态标签 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="270"
+        android:startColor="#2EFFFFFF"
+        android:endColor="#14FFFFFF" />
+    <corners android:radius="40mm" />
+    <stroke android:width="@dimen/vs_2" android:color="#33FFFFFF" />
+    <padding
+        android:left="@dimen/vs_5"
+        android:top="@dimen/vs_3"
+        android:right="@dimen/vs_5"
+        android:bottom="@dimen/vs_3" />
+</shape>

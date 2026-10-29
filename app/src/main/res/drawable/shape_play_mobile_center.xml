@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：播放器中央播放按钮 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="50mm" />
+    <gradient
+        android:angle="270"
+        android:startColor="#4DFFFFFF"
+        android:endColor="#14FFFFFF" />
+    <stroke
+        android:width="@dimen/vs_2"
+        android:color="#80FFFFFF" />
+</shape>

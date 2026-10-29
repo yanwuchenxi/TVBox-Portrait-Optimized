@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 液态玻璃：设置项/控件 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_focused="true">
+        <shape>
+            <corners android:radius="@dimen/vs_14" />
+            <gradient
+                android:angle="270"
+                android:startColor="#590CADE2"
+                android:endColor="#330CADE2" />
+            <stroke
+                android:width="@dimen/vs_2"
+                android:color="@color/dialog_control_stroke_focused" />
+        </shape>
+    </item>
+    <item android:state_pressed="true">
+        <shape>
+            <corners android:radius="@dimen/vs_14" />
+            <gradient
+                android:angle="270"
+                android:startColor="#590CADE2"
+                android:endColor="#330CADE2" />
+            <stroke
+                android:width="@dimen/vs_2"
+                android:color="@color/dialog_control_stroke_focused" />
+        </shape>
+    </item>
+    <item>
+        <shape>
+            <corners android:radius="@dimen/vs_14" />
+            <gradient
+                android:angle="270"
+                android:startColor="#2EFFFFFF"
+                android:endColor="#14FFFFFF" />
+            <stroke
+                android:width="@dimen/vs_1"
+                android:color="@color/dialog_control_stroke" />
+        </shape>
+    </item>
+</selector>
