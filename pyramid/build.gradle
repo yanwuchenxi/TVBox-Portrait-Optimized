@@ -10,7 +10,8 @@ android {
         minSdkVersion 19
         targetSdkVersion 28
         python {
-            buildPython("C:/Users/LGC/AppData/Local/Programs/Python/Python38/python.exe")
+            // 优先使用环境 PATH 中的 python3（CI/Linux）；本机可在 gradle.properties 覆盖
+            // buildPython "python3"
             pip {
                 install "lxml"
                 install "ujson"
