@@ -18,21 +18,27 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
+      # Avoid obsolete sdkmanager package "tools" (breaks android-actions/setup-android defaults)
+      - name: Setup Android SDK cmdline-tools
         uses: android-actions/setup-android@v3
-
-      - name: Accept licenses
-        run: yes | sdkmanager --licenses || true
-
-      - name: Install SDK packages
-        run: |
-          sdkmanager "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+        with:
+          packages: platform-tools platforms;android-34 build-tools;34.0.0
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Create local.properties
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          ls "$ANDROID_HOME" || true
+
       - name: Build javaDebug APK
-        run: ./gradlew assembleJavaDebug --stacktrace
+        run: ./gradlew assembleJavaDebug --stacktrace --no-daemon
+
+      - name: List outputs
+        if: always()
+        run: find app/build/outputs -type f 2>/dev/null || true
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
