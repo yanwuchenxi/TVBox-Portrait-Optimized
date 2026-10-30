@@ -167,6 +167,15 @@ public class HomeActivity extends BaseActivity {
 
     @Override
     protected void init() {
+        // 已迁移到 MainActivity + Fragment，旧入口导流
+        android.content.Intent main = new android.content.Intent(this, MainActivity.class);
+        main.putExtra(MainActivity.EXTRA_TAB, 0);
+        main.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(main);
+        finish();
+        return;
+        // dead code below kept for compile reference
+
         EventBus.getDefault().register(this);
         eventBusRegistered = true;
         ControlManager.get().startServer();

@@ -64,6 +64,15 @@ public class HistoryActivity extends BaseActivity {
 
     @Override
     protected void init() {
+        // 已迁移到 MainActivity + Fragment，旧入口导流
+        android.content.Intent main = new android.content.Intent(this, MainActivity.class);
+        main.putExtra(MainActivity.EXTRA_TAB, 2);
+        main.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(main);
+        finish();
+        return;
+        // dead code below kept for compile reference
+
         initView();
         Intent intent = getIntent();
         if (intent != null && intent.getBooleanExtra("collect", false)) {

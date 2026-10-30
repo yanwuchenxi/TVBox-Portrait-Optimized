@@ -306,10 +306,21 @@ public class LivePlayActivity extends BaseActivity {
 
     @Override
     protected void init() {
+        // 已迁移到 MainActivity + Fragment，旧入口导流
+        android.content.Intent main = new android.content.Intent(this, MainActivity.class);
+        main.putExtra(MainActivity.EXTRA_TAB, 1);
+        main.addFlags(android.content.Intent.FLAG_ACTIVITY_CLEAR_TOP | android.content.Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(main);
+        finish();
+        return;
+        // dead code below kept for compile reference
+
         context = this;
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        getWindow().setStatusBarColor(0xFF0E1726);
+        // 透明状态栏，与全局壁纸一致（不再写死深蓝挡住壁纸）
+        getWindow().setStatusBarColor(android.graphics.Color.TRANSPARENT);
+        applyLivePageBackground();
         BottomNavHelper.setup(this, R.id.nav_live);
         epgStringAddress = getConfiguredEpgAddress();
 
@@ -4010,4 +4021,15 @@ public class LivePlayActivity extends BaseActivity {
         clearLiveChannelList(releasePlayer);
 //        Toast.makeText(App.getInstance(), "源异常,请切换到其他源", Toast.LENGTH_SHORT).show();
     }
+
+    /** 直播页根布局透明，显示与首页一致的全局壁纸 */
+    private void applyLivePageBackground() {
+        View root = findViewById(R.id.live_root);
+        if (root != null) {
+            root.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        }
+        // 再次应用窗口壁纸（防止其它逻辑覆盖）
+        changeWallpaper(false);
+    }
+
 }
