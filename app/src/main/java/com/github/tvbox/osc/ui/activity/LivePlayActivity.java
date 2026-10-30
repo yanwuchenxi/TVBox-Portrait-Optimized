@@ -14,6 +14,7 @@ import android.content.pm.ActivityInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.CountDownTimer;
+import android.os.Build;
 import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Base64;
