@@ -43,6 +43,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.github.catvod.crawler.Spider;
 import com.github.tvbox.osc.R;
+import com.github.tvbox.osc.ui.dialog.ApiHistoryDialog;
+import com.github.tvbox.osc.ui.adapter.ApiHistoryDialogAdapter;
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.base.BaseActivity;
@@ -1872,30 +1874,34 @@ public class LivePlayActivity extends BaseActivity {
 
     private void showLiveApiSwitchDialog() {
         ArrayList<String> history = Hawk.get(HawkConfig.LIVE_API_HISTORY, new ArrayList<String>());
-        if (history == null || history.isEmpty()) {
+        if (history == null) history = new ArrayList<>();
+        String currentApi = Hawk.get(HawkConfig.LIVE_API_URL, "");
+        if (!TextUtils.isEmpty(currentApi) && !history.contains(currentApi)) {
+            history.add(0, currentApi);
+        }
+        if (history.isEmpty()) {
             Toast.makeText(this, "暂无可切换的直播接口", Toast.LENGTH_SHORT).show();
             return;
         }
-        final ArrayList<String> apiList = new ArrayList<>(history);
-        String currentApi = Hawk.get(HawkConfig.LIVE_API_URL, "");
-        final int currentIndex = apiList.indexOf(currentApi);
-        String[] items = new String[apiList.size()];
-        for (int i = 0; i < apiList.size(); i++) {
-            items[i] = (i == currentIndex ? "● " : "") + (i + 1) + ". " + buildLiveApiLabel(apiList.get(i));
-        }
-        new AlertDialog.Builder(this)
-                .setTitle("切换直播接口")
-                .setSingleChoiceItems(items, currentIndex, new DialogInterface.OnClickListener() {
-                    @Override
-                    public void onClick(DialogInterface dialog, int which) {
-                        dialog.dismiss();
-                        if (which >= 0 && which != currentIndex) {
-                            switchLiveApi(apiList.get(which));
-                        }
-                    }
-                })
-                .setNegativeButton("取消", null)
-                .show();
+        int currentIndex = history.indexOf(currentApi);
+        if (currentIndex < 0) currentIndex = 0;
+        final ApiHistoryDialog dialog = new ApiHistoryDialog(this);
+        dialog.setTip("配置历史");
+        dialog.setAdapter(new ApiHistoryDialogAdapter.SelectDialogInterface() {
+            @Override
+            public void click(String value) {
+                dialog.dismiss();
+                if (!TextUtils.isEmpty(value) && !value.equals(Hawk.get(HawkConfig.LIVE_API_URL, ""))) {
+                    switchLiveApi(value);
+                }
+            }
+
+            @Override
+            public void del(String value, ArrayList<String> data) {
+                Hawk.put(HawkConfig.LIVE_API_HISTORY, data);
+            }
+        }, history, currentIndex);
+        dialog.show();
     }
 
     private String buildLiveApiLabel(String url) {
@@ -2477,6 +2483,12 @@ public class LivePlayActivity extends BaseActivity {
         controller.setListener(new LiveController.LiveControlListener() {
             @Override
             public boolean singleTap() {
+                // 全屏时先出播放控件（进度/暂停等），非全屏仍打开频道列表
+                if (isBack) {
+                    showProgressBars(true);
+                    if (btnLivePlayPause != null) btnLivePlayPause.setVisibility(View.VISIBLE);
+                    return true;
+                }
                 showChannelList();
                 return true;
             }

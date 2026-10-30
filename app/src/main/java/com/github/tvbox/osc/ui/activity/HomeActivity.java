@@ -9,6 +9,7 @@ import android.annotation.SuppressLint;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.os.Handler;
 import android.os.Looper;
 import android.util.TypedValue;
@@ -190,8 +191,9 @@ public class HomeActivity extends BaseActivity {
         this.mViewPager = findViewById(R.id.mViewPager);
         this.sortAdapter = new SortAdapter();
         this.mGridView.setLayoutManager(new V7LinearLayoutManager(this.mContext, 0, false));
-        this.mGridView.setSpacingWithMargins(0, AutoSizeUtils.dp2px(this.mContext, 10.0f));
+        this.mGridView.setSpacingWithMargins(0, AutoSizeUtils.dp2px(this.mContext, 4.0f));
         this.mGridView.setAdapter(this.sortAdapter);
+        if (this.sortAdapter != null) this.sortAdapter.setSelectedPosition(0);
         sortAdapter.registerAdapterDataObserver(new RecyclerView.AdapterDataObserver() {
             @Override
             public void onChanged() {
@@ -256,7 +258,7 @@ public class HomeActivity extends BaseActivity {
                     if ((baseLazyFragment instanceof GridFragment) && !sortAdapter.getItem(position).filters.isEmpty()) {// 弹出筛选
                         ((GridFragment) baseLazyFragment).showFilter();
                     } else if (baseLazyFragment instanceof UserFragment) {
-                        showSiteSwitch();
+                        // 主页分类不再弹出数据源选择
                     }
                 }
             }
@@ -350,35 +352,48 @@ public class HomeActivity extends BaseActivity {
             @Override
             public void onClick(View v) {
                 FastClickCheckUtil.check(v);
-                final ApiDialog dialog = new ApiDialog(HomeActivity.this);
-                EventBus.getDefault().register(dialog);
-                dialog.setOnListener(new ApiDialog.OnListener() {
-                    @Override
-                    public void onchange(String api) {
-                        String oldApi = Hawk.get(HawkConfig.API_URL, "");
-                        Hawk.put(HawkConfig.API_URL, api);
-                        if (!HistoryHelper.isApiLineHistory(api)) {
-                            HistoryHelper.clearApiLineList();
-                        }
-                        if (!oldApi.equals(api)) {
-                            reloadForApiChange(api);
-                        }
-                    }
-
-                    @Override
-                    public void onLocalConfig(boolean live) {
-                        // 首页不提供本地配置导入，忽略
-                    }
-                });
-                dialog.setOnDismissListener(new DialogInterface.OnDismissListener() {
-                    @Override
-                    public void onDismiss(DialogInterface d) {
-                        EventBus.getDefault().unregister(dialog);
-                    }
-                });
-                dialog.show();
+                showApiConfigHistoryDialog();
             }
         });
+    }
+
+    /** 首页接口切换：直接弹出「配置历史」 */
+    private void showApiConfigHistoryDialog() {
+        ArrayList<String> history = Hawk.get(HawkConfig.API_HISTORY, new ArrayList<String>());
+        if (history == null) history = new ArrayList<>();
+        String current = Hawk.get(HawkConfig.API_URL, "");
+        if (!TextUtils.isEmpty(current) && !history.contains(current)) {
+            history.add(0, current);
+        }
+        if (history.isEmpty()) {
+            Toast.makeText(mContext, "配置历史为空，请先在设置中添加接口", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        int idx = history.indexOf(current);
+        if (idx < 0) idx = 0;
+        final ApiHistoryDialog dialog = new ApiHistoryDialog(HomeActivity.this);
+        dialog.setTip("配置历史");
+        dialog.setAdapter(new ApiHistoryDialogAdapter.SelectDialogInterface() {
+            @Override
+            public void click(String value) {
+                dialog.dismiss();
+                String oldApi = Hawk.get(HawkConfig.API_URL, "");
+                Hawk.put(HawkConfig.API_URL, value);
+                HistoryHelper.setApiHistory(value);
+                if (!HistoryHelper.isApiLineHistory(value)) {
+                    HistoryHelper.clearApiLineList();
+                }
+                if (!oldApi.equals(value)) {
+                    reloadForApiChange(value);
+                }
+            }
+
+            @Override
+            public void del(String value, ArrayList<String> data) {
+                Hawk.put(HawkConfig.API_HISTORY, data);
+            }
+        }, history, idx);
+        dialog.show();
     }
 
     /**
@@ -428,8 +443,8 @@ public class HomeActivity extends BaseActivity {
     private String formatSiteName(String name) {
         if (name == null) return "";
         String trimmed = name.trim();
-        if (trimmed.length() > 7) {
-            trimmed = trimmed.substring(0, 7);
+        if (trimmed.length() > 10) {
+            trimmed = trimmed.substring(0, 10);
             // 截断后若末尾残留括号/标点，去掉，避免出现半截符号
             while (trimmed.length() > 0 && "([{（【「|/-—·・:：,，.。 ".indexOf(trimmed.charAt(trimmed.length() - 1)) >= 0) {
                 trimmed = trimmed.substring(0, trimmed.length() - 1);
@@ -922,6 +937,7 @@ public class HomeActivity extends BaseActivity {
                 BaseLazyFragment baseLazyFragment = fragments.get(sortFocused);
                 if (sortFocused != currentSelected) {
                     currentSelected = sortFocused;
+                    if (sortAdapter != null) sortAdapter.setSelectedPosition(currentSelected);
                     mViewPager.setCurrentItem(sortFocused, false);
                     changeTop(sortFocused != 0);
                     if (baseLazyFragment instanceof GridFragment && ((GridFragment) baseLazyFragment).shouldReloadOnSelect()) {

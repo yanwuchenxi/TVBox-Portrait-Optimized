@@ -559,8 +559,8 @@ public class DetailActivity extends BaseActivity {
 
                     seriesAdapter.getData().get(vodInfo.playIndex).selected = true;
                     seriesAdapter.notifyItemChanged(vodInfo.playIndex);
-                    //选集全屏 想选集不全屏的注释下面一行
-                    if (showPreview && !fullWindows && previewVodInfo != null && TextUtils.equals(vodInfo.playFlag, previewVodInfo.playFlag) && (playFragment.getPlayer().isPlaying() || isCurrentPlaying)) enterFullPreview();
+                    // 选集仅切换播放，不自动进全屏（原逻辑会进竖/横全屏预览）
+                    // if (showPreview && !fullWindows && previewVodInfo != null && TextUtils.equals(vodInfo.playFlag, previewVodInfo.playFlag) && (playFragment.getPlayer().isPlaying() || isCurrentPlaying)) enterFullPreview();
                     if (!showPreview || reload) {
                         jumpToPlay();
                         firstReverse=false;

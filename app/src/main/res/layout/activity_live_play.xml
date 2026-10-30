@@ -439,11 +439,11 @@
 
                 <ImageView
                     android:id="@+id/img_channel_bar_logo"
-                    android:layout_width="@dimen/vs_60"
-                    android:layout_height="@dimen/vs_60"
+                    android:layout_width="@dimen/vs_120"
+                    android:layout_height="@dimen/vs_120"
                     android:adjustViewBounds="true"
-                    android:maxWidth="@dimen/vs_120"
-                    android:maxHeight="@dimen/vs_60"
+                    android:maxWidth="@dimen/vs_200"
+                    android:maxHeight="@dimen/vs_120"
                     android:scaleType="fitCenter"
                     android:visibility="gone" />
 
@@ -630,6 +630,7 @@
         <!-- 收藏频道 -->
         <LinearLayout
             android:id="@+id/live_favorites_bar"
+                    android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="@dimen/vs_76"
             android:gravity="center_vertical"

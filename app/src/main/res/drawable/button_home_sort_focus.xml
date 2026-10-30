@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true">
+        <shape>
+            <corners android:radius="@dimen/vs_22" />
+            <gradient
+                android:angle="270"
+                android:startColor="#660CADE2"
+                android:endColor="#330CADE2" />
+            <stroke
+                android:width="@dimen/vs_2"
+                android:color="#CC0CADE2" />
+        </shape>
+    </item>
     <item android:state_focused="true">
         <shape>
-            <corners android:radius="40mm"/>
+            <corners android:radius="@dimen/vs_22" />
             <gradient
                 android:angle="270"
                 android:startColor="#4D0CADE2"
@@ -12,10 +24,10 @@
                 android:color="#990CADE2" />
         </shape>
     </item>
-    <item android:state_focused="false">
+    <item>
         <shape>
-            <corners android:radius="40mm"/>
-            <solid android:color="@android:color/transparent"/>
+            <corners android:radius="@dimen/vs_22" />
+            <solid android:color="@android:color/transparent" />
         </shape>
     </item>
 </selector>

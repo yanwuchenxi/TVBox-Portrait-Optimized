@@ -70,7 +70,7 @@ public class SearchSubtitleDialog extends BaseDialog {
 
 
     public SearchSubtitleDialog(@NonNull @NotNull Context context) {
-        super(context);
+        super(context, R.style.SearchSubtitleDialogStyle);
         mContext = context;
         if (context instanceof Activity) {
             setOwnerActivity((Activity) context);
@@ -78,6 +78,25 @@ public class SearchSubtitleDialog extends BaseDialog {
         setContentView(R.layout.dialog_search_subtitle);
         initView(context);
         initViewModel();
+    }
+
+
+    @Override
+    public void show() {
+        if (getWindow() != null) {
+            getWindow().setSoftInputMode(
+                    android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE
+                            | android.view.WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
+        }
+        super.show();
+        // 不强制沉浸全屏，避免触发系统全屏输入
+        if (getWindow() != null && getWindow().getDecorView() != null) {
+            int ui = getWindow().getDecorView().getSystemUiVisibility();
+            ui &= ~View.SYSTEM_UI_FLAG_FULLSCREEN;
+            ui &= ~View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+            ui &= ~View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
+            getWindow().getDecorView().setSystemUiVisibility(ui);
+        }
     }
 
     protected void initView(Context context) {

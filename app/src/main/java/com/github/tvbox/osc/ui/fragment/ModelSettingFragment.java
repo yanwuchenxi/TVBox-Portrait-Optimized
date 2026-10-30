@@ -367,8 +367,10 @@ public class ModelSettingFragment extends BaseLazyFragment {
             @Override
             public void onClick(View v) {
                 ArrayList<String> history = Hawk.get(HawkConfig.API_HISTORY, new ArrayList<String>());
-                if (history.isEmpty())
+                if (history.isEmpty()) {
+                    Toast.makeText(mContext, "配置历史为空", Toast.LENGTH_SHORT).show();
                     return;
+                }
                 String current = Hawk.get(HawkConfig.API_URL, "");
                 int idx = 0;
                 if (history.contains(current))
