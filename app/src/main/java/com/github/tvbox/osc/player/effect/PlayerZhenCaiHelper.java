@@ -34,6 +34,10 @@ public final class PlayerZhenCaiHelper {
         return MODE_NAMES[getMode()];
     }
 
+    public static String getButtonLabel() {
+        return isOn() ? "臻彩·开" : "臻彩";
+    }
+
     public static int cycleMode() {
         int next = isOn() ? 0 : 1;
         Hawk.put(HAWK_KEY, next);

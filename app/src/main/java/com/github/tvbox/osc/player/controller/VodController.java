@@ -682,22 +682,19 @@ public class VodController extends BaseController {
         });
         
         if (mAudioFxBtn != null) {
-            mAudioFxBtn.setText(PlayerAudioFxHelper.getModeName());
+            mAudioFxBtn.setText(PlayerAudioFxHelper.getButtonLabel());
             mAudioFxBtn.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
                     myHandle.removeCallbacks(myRunnable);
                     myHandle.postDelayed(myRunnable, myHandleSeconds);
                     FastClickCheckUtil.check(view);
-                    int mode = PlayerAudioFxHelper.cycleMode();
-                    mAudioFxBtn.setText(PlayerAudioFxHelper.MODE_NAMES[mode]);
-                    tryApplyPlayerEffects();
-                    Toast.makeText(getContext(), "音效：" + PlayerAudioFxHelper.MODE_NAMES[mode], Toast.LENGTH_SHORT).show();
+                    showAudioFxDialog();
                 }
             });
         }
         if (mZhenCaiBtn != null) {
-            mZhenCaiBtn.setText(PlayerZhenCaiHelper.getModeName());
+            mZhenCaiBtn.setText(PlayerZhenCaiHelper.getButtonLabel());
             mZhenCaiBtn.setOnClickListener(new OnClickListener() {
                 @Override
                 public void onClick(View view) {
@@ -705,8 +702,8 @@ public class VodController extends BaseController {
                     myHandle.postDelayed(myRunnable, myHandleSeconds);
                     FastClickCheckUtil.check(view);
                     int mode = PlayerZhenCaiHelper.cycleMode();
-                    mZhenCaiBtn.setText(PlayerZhenCaiHelper.MODE_NAMES[mode]);
-                    // 与影视仓一致：只改 shader 参数，不重载影片
+                    mZhenCaiBtn.setText(PlayerZhenCaiHelper.getButtonLabel());
+                    // 与影视仓一致：仅开关，改 shader 参数，不重载
                     tryApplyPlayerEffects();
                     Toast.makeText(getContext(), mode > 0 ? "臻彩已开启" : "臻彩已关闭", Toast.LENGTH_SHORT).show();
                 }
@@ -2267,8 +2264,8 @@ mPlayerBtn.setOnClickListener(new OnClickListener() {
     }
 
     public void onPlayPreparedForEffects() {
-        if (mAudioFxBtn != null) mAudioFxBtn.setText(PlayerAudioFxHelper.getModeName());
-        if (mZhenCaiBtn != null) mZhenCaiBtn.setText(PlayerZhenCaiHelper.getModeName());
+        if (mAudioFxBtn != null) mAudioFxBtn.setText(PlayerAudioFxHelper.getButtonLabel());
+        if (mZhenCaiBtn != null) mZhenCaiBtn.setText(PlayerZhenCaiHelper.getButtonLabel());
         postDelayed(new Runnable() {
             @Override
             public void run() {

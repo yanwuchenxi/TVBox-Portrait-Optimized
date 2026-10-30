@@ -17,8 +17,15 @@ public final class PlayerAudioFxHelper {
     public static final String HAWK_KEY = "play_audio_fx_mode";
 
     public static final String[] MODE_NAMES = {
-            "音效关", "标准", "音乐", "电影", "低音", "人声", "环绕"
+            "关闭", "标准", "音乐", "电影", "低音增强", "人声增强", "环绕"
     };
+
+    /** 控制栏短文案 */
+    public static String getButtonLabel() {
+        int m = getMode();
+        if (m <= 0) return "音效";
+        return "音效·" + MODE_NAMES[m];
+    }
 
     private static Equalizer equalizer;
     private static BassBoost bassBoost;

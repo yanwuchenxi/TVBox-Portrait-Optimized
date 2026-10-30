@@ -78,8 +78,8 @@ public class GlShaderRenderView extends GLSurfaceView implements IRenderView, GL
     public void applyZhenCaiMode(int mode) {
         if (mode > 0) {
             // 鲜明提饱和+对比，接近影视仓开启观感
-            sat = 1.35f;
-            contrast = 1.12f;
+            sat = 1.42f;
+            contrast = 1.15f;
             brightness = 0.02f;
             warmth = 0.04f;
             gamma = 1.04f;
