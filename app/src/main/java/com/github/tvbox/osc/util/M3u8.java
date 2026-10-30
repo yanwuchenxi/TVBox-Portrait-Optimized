@@ -964,4 +964,113 @@ public class M3u8 {
             return UriUtil.resolve(base, line);
         }
     }
+
+    /**
+     * 状态机清洗（对齐蝴蝶影视 Local Proxy 规范）
+     */
+    private static String stateMachineClean(String baseUrl, String m3u8Content) {
+        if (m3u8Content == null || m3u8Content.isEmpty()) return m3u8Content;
+        String[] rawLines = m3u8Content.replace("\r", "").split("\n");
+        List<String> output = new ArrayList<>();
+        String pendingExtinf = null;
+        boolean pendingDiscontinuity = false;
+        boolean hasAdRemoved = false;
+        int removed = 0;
+
+        for (String raw : rawLines) {
+            String line = raw == null ? "" : raw.trim();
+            if (line.isEmpty()) continue;
+            String upper = line.toUpperCase();
+
+            if (upper.startsWith("#DISC-NOISE") || upper.contains("PPVOD-AD-INJECTED") || upper.contains("AD-INJECTED")) {
+                continue;
+            }
+            if (upper.startsWith(TAG_KEY) && upper.contains("METHOD=NONE")) {
+                continue;
+            }
+            if (upper.startsWith(TAG_KEY) && isAdUriLine(line)) {
+                continue;
+            }
+            if (upper.startsWith(TAG_DISCONTINUITY)) {
+                pendingDiscontinuity = true;
+                continue;
+            }
+            if (upper.startsWith(TAG_KEY)) {
+                String fixedKey = fixKeyUri(baseUrl, line);
+                if (pendingDiscontinuity || hasAdRemoved) {
+                    if (output.isEmpty() || !output.get(output.size() - 1).toUpperCase().startsWith(TAG_DISCONTINUITY)) {
+                        output.add(TAG_DISCONTINUITY);
+                    }
+                    pendingDiscontinuity = false;
+                    hasAdRemoved = false;
+                }
+                output.add(fixedKey);
+                continue;
+            }
+            if (upper.startsWith(TAG_MEDIA_DURATION)) {
+                pendingExtinf = line;
+                continue;
+            }
+            if (!line.startsWith("#")) {
+                if (isAdUriLine(line)) {
+                    pendingExtinf = null;
+                    hasAdRemoved = true;
+                    removed++;
+                } else {
+                    if (pendingDiscontinuity || hasAdRemoved) {
+                        if (output.isEmpty() || !output.get(output.size() - 1).toUpperCase().startsWith(TAG_DISCONTINUITY)) {
+                            output.add(TAG_DISCONTINUITY);
+                        }
+                        pendingDiscontinuity = false;
+                        hasAdRemoved = false;
+                    }
+                    if (pendingExtinf != null) {
+                        output.add(pendingExtinf);
+                        pendingExtinf = null;
+                    }
+                    output.add(toAbsoluteUrl(baseUrl, line));
+                }
+                continue;
+            }
+            output.add(line);
+        }
+        if (removed > 0) {
+            currentAdCount += removed;
+            LOG.i("echo-fixAdM3u8 stateMachine removed slices: " + removed);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < output.size(); i++) {
+            if (i > 0) sb.append('\n');
+            sb.append(output.get(i));
+        }
+        return normalizeMediaPlaylist(sb.toString());
+    }
+
+    private static boolean isAdUriLine(String line) {
+        if (line == null || line.isEmpty()) return false;
+        if (REGEX_AD_SEGMENT_URI.matcher(line).find()) return true;
+        if (REGEX_AD_SLICE_PATH.matcher(line).find()) return true;
+        String lower = line.toLowerCase();
+        for (String kw : AD_DOMAIN_KEYWORDS) {
+            if (lower.contains(kw)) return true;
+        }
+        return false;
+    }
+
+    private static String fixKeyUri(String baseUrl, String keyLine) {
+        try {
+            Matcher m = REGEX_URI.matcher(keyLine);
+            if (m.find()) {
+                String uri = m.group(1);
+                String abs = toAbsoluteUrl(baseUrl, uri);
+                if (abs != null && !abs.equals(uri)) {
+                    return keyLine.replace(uri, abs);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+        return keyLine;
+    }
+
+
 }
