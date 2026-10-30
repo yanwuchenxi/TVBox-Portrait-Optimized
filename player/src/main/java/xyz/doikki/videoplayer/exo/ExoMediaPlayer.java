@@ -1,6 +1,7 @@
 package xyz.doikki.videoplayer.exo;
 
 import android.content.Context;
+import android.media.AudioManager;
 import android.content.res.AssetFileDescriptor;
 import android.util.Log;
 import android.view.Surface;
@@ -38,6 +39,7 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
 
     protected Context mAppContext;
     protected SimpleExoPlayer mInternalPlayer;
+    protected int mAudioSessionId = 0;
     protected MediaSource mMediaSource;
     protected ExoMediaSourceHelper mMediaSourceHelper;
 
@@ -81,6 +83,17 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
                 new DefaultAnalyticsCollector(Clock.DEFAULT))
                 .build();
         setOptions();
+        // 预分配 audioSession，便于音效 Equalizer 稳定挂接
+        try {
+            AudioManager am = (AudioManager) mAppContext.getSystemService(Context.AUDIO_SERVICE);
+            if (am != null && android.os.Build.VERSION.SDK_INT >= 21) {
+                mAudioSessionId = am.generateAudioSessionId();
+                if (mAudioSessionId > 0) {
+                    mInternalPlayer.setAudioSessionId(mAudioSessionId);
+                }
+            }
+        } catch (Throwable ignored) {
+        }
 
         // 播放器日志（当开启日志且 mTrackSelector 为 MappingTrackSelector 时）
         if (VideoViewManager.getConfig().mIsEnableLog && mTrackSelector instanceof MappingTrackSelector) {
@@ -88,6 +101,18 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
         }
         if(trackSelector == null)trackSelector=(DefaultTrackSelector)mTrackSelector;
         mInternalPlayer.addListener(this);
+    }
+
+    public int getAudioSessionId() {
+        if (mAudioSessionId > 0) return mAudioSessionId;
+        try {
+            if (mInternalPlayer != null) {
+                int id = mInternalPlayer.getAudioSessionId();
+                if (id > 0) mAudioSessionId = id;
+                return id;
+            }
+        } catch (Throwable ignored) {}
+        return 0;
     }
 
     public void setTrackSelector(TrackSelector trackSelector) {
