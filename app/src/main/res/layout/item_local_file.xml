@@ -33,7 +33,7 @@
 
     <TextView
         android:id="@+id/tvInfo"
-        android:layout_width="@dimen/vs_220"
+        android:layout_width="@dimen/vs_200"
         android:layout_height="match_parent"
         android:ellipsize="end"
         android:gravity="center_vertical|right"

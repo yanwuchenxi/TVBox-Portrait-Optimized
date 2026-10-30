@@ -18,7 +18,7 @@
 
         <TextView
             android:id="@+id/mSearchTitle"
-            android:layout_width="@dimen/vs_220"
+            android:layout_width="@dimen/vs_200"
             android:layout_height="match_parent"
             android:layout_gravity="center_vertical"
             android:layout_marginRight="@dimen/vs_40"
