@@ -219,38 +219,24 @@ public class ModelSettingFragment extends BaseLazyFragment {
                 FastClickCheckUtil.check(v);
                 Toast.makeText(mContext, "壁纸下载中...", Toast.LENGTH_SHORT).show();
                 final String dir = requireActivity().getFilesDir().getAbsolutePath();
-                // 优先本地代理，失败则走公开图源，避免「功能无效」
-                OkGo.<File>get("http://127.0.0.1:9978/proxy?do=wallpaper").execute(new FileCallback(dir, "wp") {
-                        @Override
-                        public void onSuccess(Response<File> response) {
-                            ((BaseActivity) requireActivity()).changeWallpaper(true);
-                            Toast.makeText(mContext, "壁纸已更换", Toast.LENGTH_SHORT).show();
-                        }
+                OkGo.<File>get("https://bingw.jasonzeng.dev/?index=random")
+                        .execute(new FileCallback(dir, "wp") {
+                            @Override
+                            public void onSuccess(Response<File> response) {
+                                ((BaseActivity) requireActivity()).changeWallpaper(true);
+                                Toast.makeText(mContext, "壁纸已更换", Toast.LENGTH_SHORT).show();
+                            }
 
-                        @Override
-                        public void onError(Response<File> response) {
-                            // fallback public wallpaper
-                            long seed = System.currentTimeMillis() % 10000;
-                            OkGo.<File>get("https://picsum.photos/seed/" + seed + "/1080/1920")
-                                    .execute(new FileCallback(dir, "wp") {
-                                        @Override
-                                        public void onSuccess(Response<File> response) {
-                                            ((BaseActivity) requireActivity()).changeWallpaper(true);
-                                            Toast.makeText(mContext, "壁纸已更换", Toast.LENGTH_SHORT).show();
-                                        }
+                            @Override
+                            public void onError(Response<File> response) {
+                                Toast.makeText(mContext, "壁纸下载失败", Toast.LENGTH_SHORT).show();
+                            }
 
-                                        @Override
-                                        public void onError(Response<File> response) {
-                                            Toast.makeText(mContext, "壁纸下载失败", Toast.LENGTH_SHORT).show();
-                                        }
-                                    });
-                        }
-
-                        @Override
-                        public void downloadProgress(Progress progress) {
-                            super.downloadProgress(progress);
-                        }
-                    });
+                            @Override
+                            public void downloadProgress(Progress progress) {
+                                super.downloadProgress(progress);
+                            }
+                        });
             }
         });
         findViewById(R.id.llWpRecovery).setOnClickListener(new View.OnClickListener() {

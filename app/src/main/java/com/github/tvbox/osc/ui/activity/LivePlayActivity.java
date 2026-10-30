@@ -1749,7 +1749,19 @@ public class LivePlayActivity extends BaseActivity {
             hideLiveSettingsPanel();
         }
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        // 允许画面延伸到刘海/挖孔（前置摄像头）区域，避免一侧黑边
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES;
+            getWindow().setAttributes(lp);
+        }
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
+                | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        try {
+            xyz.doikki.videoplayer.util.CutoutUtil.adaptCutoutAboveAndroidP(this, true);
+        } catch (Throwable ignored) {
+        }
         View decor = getWindow().getDecorView();
         if (decor != null) {
             decor.setSystemUiVisibility(
@@ -1764,7 +1776,10 @@ public class LivePlayActivity extends BaseActivity {
         if (root != null) {
             savedRootPadding = new int[]{root.getPaddingLeft(), root.getPaddingTop(),
                     root.getPaddingRight(), root.getPaddingBottom()};
+            // fitsSystemWindows 会为刘海自动加 padding，全屏时强制清零
+            root.setFitsSystemWindows(false);
             root.setPadding(0, 0, 0, 0);
+            root.requestApplyInsets();
         }
         if (ll_epg != null) ll_epg.setVisibility(View.GONE);
         if (liveFavoritesBar != null) liveFavoritesBar.setVisibility(View.GONE);
@@ -1822,11 +1837,26 @@ public class LivePlayActivity extends BaseActivity {
         if (!liveFullScreen) return;
         liveFullScreen = false;
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
-        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
+                | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            WindowManager.LayoutParams lp = getWindow().getAttributes();
+            lp.layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_DEFAULT;
+            getWindow().setAttributes(lp);
+        }
+        try {
+            xyz.doikki.videoplayer.util.CutoutUtil.adaptCutoutAboveAndroidP(this, false);
+        } catch (Throwable ignored) {
+        }
         View root = findViewById(R.id.live_root);
-        if (root != null && savedRootPadding != null) {
-            root.setPadding(savedRootPadding[0], savedRootPadding[1], savedRootPadding[2], savedRootPadding[3]);
-            savedRootPadding = null;
+        if (root != null) {
+            root.setFitsSystemWindows(true);
+            if (savedRootPadding != null) {
+                root.setPadding(savedRootPadding[0], savedRootPadding[1], savedRootPadding[2], savedRootPadding[3]);
+                savedRootPadding = null;
+            }
+            root.requestApplyInsets();
         }
         if (ll_epg != null) ll_epg.setVisibility(View.VISIBLE);
         if (liveFavoritesBar != null) liveFavoritesBar.setVisibility(View.GONE);
