@@ -2033,6 +2033,11 @@ mPlayerBtn.setOnClickListener(new OnClickListener() {
 
     private void processM3u8Content(String url, String content, HashMap<String, String> headers) {
         String basePath = getBasePath(url);
+        // 设置页「M3U8去广告」关闭时直通
+        if (!Hawk.get(HawkConfig.M3U8_PURIFY, true)) {
+            listener.startPlayUrl(url, headers);
+            return;
+        }
         RemoteServer.m3u8Content = M3u8.purify(basePath, content);
         if (RemoteServer.m3u8Content == null || M3u8.currentAdCount==0) {
             LOG.i("echo-m3u8内容解析：未检测到广告");

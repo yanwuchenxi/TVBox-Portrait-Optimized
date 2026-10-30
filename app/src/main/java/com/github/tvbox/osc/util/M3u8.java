@@ -37,10 +37,16 @@ public class M3u8 {
     // 增强：广告片段 URL 特征识别（去广告接口常用规则）
     private static final Pattern REGEX_AD_SEGMENT_URI = Pattern.compile("(?i)(^|[/?&=_.-])(ads?|adv|advert(ise(ment)?)?|commercial|preroll|pre-roll|midroll|mid-roll|postroll|post-roll|sponsor|scte|vast|vmap|interstitial|bumper)([/?&=_.-]|$)");
 
+    // 蝴蝶影视教程 + 常见切片广告路径特征
+    private static final Pattern REGEX_AD_SLICE_PATH = Pattern.compile(
+            "(?i)(?:^/\\d{8}/[a-f0-9]{16}/seg_|/[a-f0-9]{32}/seg_|/mov/AD/|/ad/|/ads/|adjump|erlgnf\\.com|ppvod-ad|ad-injected|/advert/)"
+    );
+
     // 增强：广告域名特征（常见广告CDN）
     private static final String[] AD_DOMAIN_KEYWORDS = {
         "adservice", "adserver", "adsystem", "doubleclick", "googlesyndication",
-        "advertising", "2mdn.net", "moatads", "scorecardresearch", "quantserve"
+        "advertising", "2mdn.net", "moatads", "scorecardresearch", "quantserve",
+        "erlgnf.com", "adjump", "ppvod", "adcdn", "ad-cloud", "adcloud"
     };
 
     private static final int MAX_FRAME_RATE_AD_BLOCK_SIZE = 12;
@@ -69,9 +75,12 @@ public class M3u8 {
             }
         }
 
+        // 1) 路径特征 / 域名少数派过滤（原有）
         String result = removeMinorityUrl(tsUrlPre, m3u8content);
         if (result != null && currentAdCount > 0) result = get(tsUrlPre, result);
         else result = get(tsUrlPre, m3u8content);
+        // 2) 状态机清洗：DISCONTINUITY/KEY 时序 + 广告切片正则 + 相对路径补全（蝴蝶规范）
+        result = stateMachineClean(tsUrlPre, result);
         result = keepVodEndList(m3u8content, result);
 
         // Final safety check: if too many segments removed, return original content
