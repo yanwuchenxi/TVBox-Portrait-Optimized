@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 直播三列列表底板：半透明，不挡壁纸 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <corners android:radius="@dimen/vs_20" />
+    <solid android:color="#80152138" />
+    <stroke
+        android:width="@dimen/vs_1"
+        android:color="#33FFFFFF" />
+</shape>
