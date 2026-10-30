@@ -2233,6 +2233,42 @@ mPlayerBtn.setOnClickListener(new OnClickListener() {
             return (int) (value * context.getResources().getDisplayMetrics().density + 0.5f);
         }
     }
+
+    private void showAudioFxDialog() {
+        if (mActivity == null || mActivity.isFinishing()) return;
+        ArrayList<Integer> modes = new ArrayList<>();
+        for (int i = 0; i < PlayerAudioFxHelper.MODE_NAMES.length; i++) modes.add(i);
+        int cur = PlayerAudioFxHelper.getMode();
+        SelectDialog<Integer> dialog = new SelectDialog<>(mActivity);
+        dialog.setTip("音效模式");
+        dialog.setAdapter(new SelectDialogAdapter.SelectDialogInterface<Integer>() {
+            @Override
+            public void click(Integer value, int pos) {
+                dialog.cancel();
+                PlayerAudioFxHelper.setMode(value);
+                if (mAudioFxBtn != null) mAudioFxBtn.setText(PlayerAudioFxHelper.getButtonLabel());
+                tryApplyPlayerEffects();
+                Toast.makeText(getContext(), "音效：" + PlayerAudioFxHelper.MODE_NAMES[value], Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public String getDisplay(Integer val) {
+                return PlayerAudioFxHelper.MODE_NAMES[val];
+            }
+        }, new DiffUtil.ItemCallback<Integer>() {
+            @Override
+            public boolean areItemsTheSame(@NonNull Integer oldItem, @NonNull Integer newItem) {
+                return oldItem.equals(newItem);
+            }
+
+            @Override
+            public boolean areContentsTheSame(@NonNull Integer oldItem, @NonNull Integer newItem) {
+                return oldItem.equals(newItem);
+            }
+        }, modes, cur);
+        dialog.show();
+    }
+
     private void tryApplyPlayerEffects() {
         try {
             VideoView<?> vv = findHostVideoView();
