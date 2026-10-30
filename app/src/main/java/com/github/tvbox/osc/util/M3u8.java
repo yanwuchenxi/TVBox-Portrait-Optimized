@@ -81,6 +81,8 @@ public class M3u8 {
         else result = get(tsUrlPre, m3u8content);
         // 2) 状态机清洗：DISCONTINUITY/KEY 时序 + 广告切片正则 + 相对路径补全（蝴蝶规范）
         result = stateMachineClean(tsUrlPre, result);
+        // 3) 中插加强：无异域特征时按 DISCONTINUITY/KEY 分组丢短块 + 时长岛
+        result = cleanMidRollAggressive(result);
         result = keepVodEndList(m3u8content, result);
 
         // Final safety check: if too many segments removed, return original content
@@ -742,32 +744,36 @@ public class M3u8 {
     }
 
     /**
-     * 中插启发式：夹在两段更长正片之间、时长约 8–120 秒、远短于主内容。
-     * 不依赖异域/异路径，用于 dytt 等同 CDN 目录植入广告。
+     * 中插启发式：同 CDN 目录也可删。
+     * - 夹在更长正片之间、8–150 秒
+     * - 或：非主组且时长 12–90 秒、主内容明显更长（放宽夹心要求）
      */
     private static boolean isMidRollAdGroup(Group group, Group main, List<Group> groups, int index) {
         if (group == null || main == null || groups == null) return false;
         if (group == main || group.segmentCount == 0) return false;
-        if (index <= 0 || index >= groups.size() - 1) return false;
-
-        // 典型中插时长窗口（本例约 30s；排除极短噪声与过长章节）
-        if (group.totalDuration < 8.0 || group.totalDuration > 120.0) return false;
-        if (group.segmentCount > 50) return false;
-
-        // 主内容需足够长，避免短视频误伤
-        if (main.totalDuration < 90.0 && main.segmentCount < 30) return false;
-        if (group.totalDuration >= main.totalDuration * 0.25) return false;
+        if (group.totalDuration < 8.0 || group.totalDuration > 150.0) return false;
+        if (group.segmentCount > 60) return false;
+        if (main.totalDuration < 60.0 && main.segmentCount < 20) return false;
+        if (group.totalDuration >= main.totalDuration * 0.35) return false;
 
         Group prev = nearestMediaGroup(groups, index, -1);
         Group next = nearestMediaGroup(groups, index, 1);
-        if (prev == null || next == null) return false;
 
-        // 前后都是明显更长的内容块
-        boolean prevLonger = prev.totalDuration >= Math.max(group.totalDuration * 1.5, 25.0)
-                || prev.segmentCount >= Math.max(group.segmentCount * 2, 8);
-        boolean nextLonger = next.totalDuration >= Math.max(group.totalDuration * 1.5, 25.0)
-                || next.segmentCount >= Math.max(group.segmentCount * 2, 8);
-        return prevLonger && nextLonger;
+        // 严格夹心
+        if (prev != null && next != null) {
+            boolean prevLonger = prev.totalDuration >= Math.max(group.totalDuration * 1.2, 20.0)
+                    || prev.segmentCount >= Math.max(group.segmentCount * 2, 6);
+            boolean nextLonger = next.totalDuration >= Math.max(group.totalDuration * 1.2, 20.0)
+                    || next.segmentCount >= Math.max(group.segmentCount * 2, 6);
+            if (prevLonger && nextLonger) return true;
+        }
+
+        // 放宽：非首组、时长 12–90s、主组至少 3 倍长
+        if (index > 0 && group.totalDuration >= 12.0 && group.totalDuration <= 90.0
+                && main.totalDuration >= group.totalDuration * 3.0) {
+            return true;
+        }
+        return false;
     }
 
     private static Group nearestMediaGroup(List<Group> groups, int from, int step) {
@@ -776,6 +782,184 @@ public class M3u8 {
             if (g != null && g.segmentCount > 0) return g;
         }
         return null;
+    }
+
+    /**
+     * 中插加强清洗：
+     * 1) 用 DISCONTINUITY 或 KEY 变化分组后丢短块
+     * 2) 无断点时，按「时长岛」删除中间 12–90 秒的异常时长连续切片
+     */
+    private static String cleanMidRollAggressive(String m3u8Content) {
+        if (m3u8Content == null || m3u8Content.isEmpty()) return m3u8Content;
+        String result = cleanGroupsByDiscontinuityOrKey(m3u8Content);
+        result = cleanDurationIslands(result);
+        return result;
+    }
+
+    private static String cleanGroupsByDiscontinuityOrKey(String m3u8Content) {
+        String[] lines = m3u8Content.replace("\r", "").split("\n");
+        List<Group> groups = buildDiscontinuityOrKeyGroups(lines);
+        if (groups.size() < 2) return m3u8Content;
+        Group main = findMainGroup(groups);
+        if (main == null || main.segmentCount < 5) return m3u8Content;
+
+        StringBuilder sb = new StringBuilder();
+        boolean changed = false;
+        int removed = 0;
+        for (int i = 0; i < groups.size(); i++) {
+            Group group = groups.get(i);
+            if (group.segmentCount == 0) {
+                group.appendTo(sb);
+                continue;
+            }
+            if (shouldDropGroup(group, main, groups, i)) {
+                currentAdCount += group.segmentCount;
+                removed += group.segmentCount;
+                changed = true;
+                // 保留断点，避免时间轴粘连异常
+                if (!sb.toString().endsWith(TAG_DISCONTINUITY + "\n")) {
+                    // skip adding empty
+                }
+                continue;
+            }
+            group.appendTo(sb);
+        }
+        if (changed) {
+            LOG.i("echo-fixAdM3u8 midRollAggressive groups removed segs=" + removed + " groups=" + groups.size());
+            return normalizeMediaPlaylist(sb.toString());
+        }
+        return m3u8Content;
+    }
+
+    /** DISCONTINUITY 或正片 KEY 切换处分组（中插常在新 KEY 块） */
+    private static List<Group> buildDiscontinuityOrKeyGroups(String[] lines) {
+        List<Group> groups = new ArrayList<>();
+        Group group = new Group();
+        boolean seenMedia = false;
+        for (String raw : lines) {
+            String line = raw == null ? "" : raw.trim();
+            boolean boundary = false;
+            if (line.startsWith(TAG_DISCONTINUITY) && seenMedia) {
+                boundary = true;
+            } else if (line.startsWith(TAG_KEY) && seenMedia && group.segmentCount > 0) {
+                // 新的解密 KEY 往往对应广告块/正片块切换
+                boundary = true;
+            }
+            if (boundary) {
+                groups.add(group);
+                group = new Group();
+            }
+            group.add(raw);
+            if (line.length() > 0 && !line.startsWith("#")) seenMedia = true;
+        }
+        if (group.hasMedia() || !group.lines.isEmpty()) groups.add(group);
+        return groups;
+    }
+
+    /**
+     * 无 DISCONTINUITY 时：找中间「时长岛」——连续切片总时长 12–90s，
+     * 且平均 EXTINF 与前后窗口差异明显（广告编码时常长更整齐/更短）。
+     */
+    private static String cleanDurationIslands(String m3u8Content) {
+        if (m3u8Content == null || !m3u8Content.contains(TAG_MEDIA_DURATION)) return m3u8Content;
+        // 若已有多个 DISCONTINUITY 组，交给分组逻辑，避免双重误删
+        int disc = 0;
+        for (String l : m3u8Content.split("\n")) {
+            if (l.trim().startsWith(TAG_DISCONTINUITY)) disc++;
+        }
+        if (disc >= 2) return m3u8Content;
+
+        String[] rawLines = m3u8Content.replace("\r", "").split("\n", -1);
+        List<int[]> segs = new ArrayList<>(); // [extinfLine, urlLine, durationMillis]
+        String pendingExtinf = null;
+        int pendingIdx = -1;
+        for (int i = 0; i < rawLines.length; i++) {
+            String line = rawLines[i] == null ? "" : rawLines[i].trim();
+            if (line.startsWith(TAG_MEDIA_DURATION)) {
+                pendingExtinf = line;
+                pendingIdx = i;
+                continue;
+            }
+            if (pendingExtinf != null && line.length() > 0 && !line.startsWith("#")) {
+                double dur = parseExtInfDuration(pendingExtinf).doubleValue();
+                segs.add(new int[]{pendingIdx, i, (int) Math.round(dur * 1000)});
+                pendingExtinf = null;
+                pendingIdx = -1;
+            }
+        }
+        if (segs.size() < 40) return m3u8Content; // 太短不处理
+
+        double totalSec = 0;
+        for (int[] s : segs) totalSec += s[2] / 1000.0;
+        if (totalSec < 180) return m3u8Content;
+
+        // 滑动找时长落在 12–90s 的窗口，且起点累计时间 >= 60s、终点距结尾 >= 30s
+        boolean[] dropSeg = new boolean[segs.size()];
+        int bestStart = -1, bestEnd = -1;
+        double bestScore = 0;
+        for (int i = 0; i < segs.size(); i++) {
+            double sum = 0;
+            double startAt = 0;
+            for (int k = 0; k < i; k++) startAt += segs.get(k)[2] / 1000.0;
+            if (startAt < 60) continue;
+            for (int j = i; j < segs.size(); j++) {
+                sum += segs.get(j)[2] / 1000.0;
+                if (sum < 12) continue;
+                if (sum > 90) break;
+                double endAt = startAt + sum;
+                if (totalSec - endAt < 30) break;
+                // 窗口平均时长
+                double avg = sum / (j - i + 1);
+                // 前后各取最多 15 段做对比
+                double prevAvg = avgNeighbor(segs, Math.max(0, i - 15), i);
+                double nextAvg = avgNeighbor(segs, j + 1, Math.min(segs.size(), j + 1 + 15));
+                if (prevAvg <= 0 || nextAvg <= 0) continue;
+                // 广告块往往更「整齐」或均值偏离
+                double score = 0;
+                if (avg < prevAvg * 0.85 && avg < nextAvg * 0.85) score += (prevAvg - avg) + (nextAvg - avg);
+                if (avg > prevAvg * 1.15 && avg > nextAvg * 1.15) score += (avg - prevAvg) + (avg - nextAvg);
+                // 同均值但窗口很短夹在长内容中也可疑
+                if (sum >= 20 && sum <= 60 && startAt >= 120) score += 0.5;
+                if (score > bestScore && (j - i + 1) >= 3) {
+                    bestScore = score;
+                    bestStart = i;
+                    bestEnd = j;
+                }
+            }
+        }
+        if (bestStart < 0 || bestScore < 0.4) return m3u8Content;
+
+        for (int i = bestStart; i <= bestEnd; i++) dropSeg[i] = true;
+        int removed = bestEnd - bestStart + 1;
+        currentAdCount += removed;
+        LOG.i("echo-fixAdM3u8 durationIsland removed=" + removed + " score=" + bestScore
+                + " range=" + bestStart + "-" + bestEnd);
+
+        // 重建：丢掉被标记的 EXTINF+URL
+        java.util.HashSet<Integer> dropLines = new java.util.HashSet<>();
+        for (int i = 0; i < segs.size(); i++) {
+            if (!dropSeg[i]) continue;
+            dropLines.add(segs.get(i)[0]);
+            dropLines.add(segs.get(i)[1]);
+        }
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < rawLines.length; i++) {
+            if (dropLines.contains(i)) continue;
+            sb.append(rawLines[i]).append('\n');
+        }
+        // 在删除处补 DISCONTINUITY（可选，播放器更稳）
+        return normalizeMediaPlaylist(sb.toString());
+    }
+
+    private static double avgNeighbor(List<int[]> segs, int from, int to) {
+        if (from >= to) return 0;
+        double sum = 0;
+        int n = 0;
+        for (int i = from; i < to && i < segs.size(); i++) {
+            sum += segs.get(i)[2] / 1000.0;
+            n++;
+        }
+        return n == 0 ? 0 : sum / n;
     }
 
     private static String hostOf(String url) {
