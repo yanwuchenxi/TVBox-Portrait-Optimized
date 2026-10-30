@@ -4011,4 +4011,14 @@ public class LivePlayActivity extends BaseActivity {
         clearLiveChannelList(releasePlayer);
 //        Toast.makeText(App.getInstance(), "源异常,请切换到其他源", Toast.LENGTH_SHORT).show();
     }
+
+    /** 直播页根布局透明，显示与首页一致的全局壁纸 */
+    private void applyLivePageBackground() {
+        View root = findViewById(R.id.live_root);
+        if (root != null) {
+            root.setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        }
+        changeWallpaper(false);
+    }
+
 }
