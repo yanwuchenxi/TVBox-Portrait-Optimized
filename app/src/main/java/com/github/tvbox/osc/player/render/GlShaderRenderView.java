@@ -65,7 +65,7 @@ public class GlShaderRenderView extends GLSurfaceView implements IRenderView, GL
         setRenderer(this);
         setRenderMode(RENDERMODE_WHEN_DIRTY);
         float[] verts = {-1f, -1f, 1f, -1f, -1f, 1f, 1f, 1f};
-        float[] texs = {0f, 1f, 1f, 1f, 0f, 0f, 1f, 0f};
+        float[] texs = {0f, 0f, 1f, 0f, 0f, 1f, 1f, 1f};
         vertBuffer = ByteBuffer.allocateDirect(verts.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
         vertBuffer.put(verts).position(0);
         texBuffer = ByteBuffer.allocateDirect(texs.length * 4).order(ByteOrder.nativeOrder()).asFloatBuffer();
@@ -74,30 +74,21 @@ public class GlShaderRenderView extends GLSurfaceView implements IRenderView, GL
         applyZhenCaiMode(PlayerZhenCaiHelper.getMode());
     }
 
+    /** 影视仓同款：仅开关。0=直通，>0=开启臻彩增强 */
     public void applyZhenCaiMode(int mode) {
-        // mode 对应 PlayerZhenCaiHelper
-        switch (mode) {
-            case 1: // 标准
-                sat = 1.08f; contrast = 1.06f; brightness = 0.02f; warmth = 0f; gamma = 1.02f;
-                break;
-            case 2: // 鲜明
-                sat = 1.45f; contrast = 1.18f; brightness = 0.03f; warmth = 0.05f; gamma = 1.05f;
-                break;
-            case 3: // 柔和
-                sat = 0.88f; contrast = 0.95f; brightness = 0.04f; warmth = 0.02f; gamma = 0.98f;
-                break;
-            case 4: // 暖色
-                sat = 1.1f; contrast = 1.08f; brightness = 0.02f; warmth = 0.55f; gamma = 1.02f;
-                break;
-            case 5: // 冷色
-                sat = 1.1f; contrast = 1.08f; brightness = 0.01f; warmth = -0.55f; gamma = 1.02f;
-                break;
-            case 6: // 电影感
-                sat = 0.72f; contrast = 1.22f; brightness = -0.02f; warmth = 0.12f; gamma = 1.08f;
-                break;
-            default: // 关闭 = 直通
-                sat = 1f; contrast = 1f; brightness = 0f; warmth = 0f; gamma = 1f;
-                break;
+        if (mode > 0) {
+            // 鲜明提饱和+对比，接近影视仓开启观感
+            sat = 1.35f;
+            contrast = 1.12f;
+            brightness = 0.02f;
+            warmth = 0.04f;
+            gamma = 1.04f;
+        } else {
+            sat = 1f;
+            contrast = 1f;
+            brightness = 0f;
+            warmth = 0f;
+            gamma = 1f;
         }
         requestRender();
     }
@@ -187,6 +178,7 @@ public class GlShaderRenderView extends GLSurfaceView implements IRenderView, GL
         uBrightness = GLES20.glGetUniformLocation(program, "uBrightness");
         uWarmth = GLES20.glGetUniformLocation(program, "uWarmth");
         uGamma = GLES20.glGetUniformLocation(program, "uGamma");
+        applyZhenCaiMode(PlayerZhenCaiHelper.getMode());
         post(() -> {
             if (mediaPlayer != null && surface != null) {
                 mediaPlayer.setSurface(surface);

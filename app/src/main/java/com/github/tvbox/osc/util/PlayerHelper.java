@@ -48,9 +48,9 @@ public class PlayerHelper {
             e.printStackTrace();
         }
         if(forcePlayerType>=0)playerType = forcePlayerType;
-        // 臻彩真 shader 依赖 Exo + GL 渲染管线
-        boolean zhenCaiOn = PlayerZhenCaiHelper.getMode() > 0;
-        if (zhenCaiOn) {
+        // 点播固定优先 Exo；GL 渲染管线常开（臻彩关=shader 直通，开=增强），开关不重载
+        boolean useGlShader = true;
+        if (useGlShader && playerType != 1) {
             playerType = 2;
             renderType = 0;
         }
@@ -82,20 +82,14 @@ public class PlayerHelper {
         } else {
             playerFactory = ExoMediaPlayerFactory.create();
         }
-        RenderViewFactory renderViewFactory = null;
-        if (zhenCaiOn) {
-            // 真 shader 臻彩：OES + fragment shader
+        RenderViewFactory renderViewFactory;
+        // Exo 走 GL 管线：臻彩开/关只改 shader 参数，无需重载影片
+        if (playerType == 2 || playerType == 0) {
             renderViewFactory = GlShaderRenderViewFactory.create();
+        } else if (renderType == 1) {
+            renderViewFactory = SurfaceRenderViewFactory.create();
         } else {
-            switch (renderType) {
-                case 0:
-                default:
-                    renderViewFactory = TextureRenderViewFactory.create();
-                    break;
-                case 1:
-                    renderViewFactory = SurfaceRenderViewFactory.create();
-                    break;
-            }
+            renderViewFactory = TextureRenderViewFactory.create();
         }
         if(videoView!=null){
             videoView.setPlayerFactory(playerFactory);
@@ -107,11 +101,6 @@ public class PlayerHelper {
     public static void updateCfg(VideoView videoView) {
         int playType = Hawk.get(HawkConfig.PLAY_TYPE, 2);
         int renderType = Hawk.get(HawkConfig.PLAY_RENDER, 0);
-        boolean zhenCaiOn2 = PlayerZhenCaiHelper.getMode() > 0;
-        if (zhenCaiOn2) {
-            playType = 2;
-            renderType = 0;
-        }
         PlayerFactory playerFactory;
         if (playType == 1) {
             playerFactory = new PlayerFactory<IjkMediaPlayer>() {
@@ -138,7 +127,7 @@ public class PlayerHelper {
             playerFactory = ExoMediaPlayerFactory.create();
         }
         RenderViewFactory renderViewFactory;
-        if (zhenCaiOn2) {
+        if (playType == 2 || playType == 0) {
             renderViewFactory = GlShaderRenderViewFactory.create();
         } else if (renderType == 1) {
             renderViewFactory = SurfaceRenderViewFactory.create();

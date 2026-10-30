@@ -6,44 +6,42 @@ import android.graphics.Paint;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
-import com.github.tvbox.osc.player.render.GlShaderRenderView;
 
+import com.github.tvbox.osc.player.render.GlShaderRenderView;
 import com.orhanobut.hawk.Hawk;
 
 /**
- * 点播臻彩（色彩增强）：对 TextureView 施加 ColorMatrix。
- * 0关闭 1标准 2鲜明 3柔和 4暖色 5冷色 6黑白电影
+ * 臻彩：与影视仓一致，仅开关。
+ * 优先走 Exo + GLES 真 shader；否则回退 TextureView ColorMatrix。
  */
 public final class PlayerZhenCaiHelper {
     public static final String HAWK_KEY = "play_zhencai_mode";
 
-    public static final String[] MODE_NAMES = {
-            "臻彩关", "标准", "鲜明", "柔和", "暖色", "冷色", "电影感"
-    };
-
-    private static int appliedOnViewHash = 0;
+    /** 兼容旧按钮文案：0 关，1 开 */
+    public static final String[] MODE_NAMES = {"臻彩关", "臻彩开"};
 
     private PlayerZhenCaiHelper() {}
 
     public static int getMode() {
-        return Hawk.get(HAWK_KEY, 0);
+        return Hawk.get(HAWK_KEY, 0) > 0 ? 1 : 0;
+    }
+
+    public static boolean isOn() {
+        return getMode() > 0;
     }
 
     public static String getModeName() {
-        int m = getMode();
-        if (m < 0 || m >= MODE_NAMES.length) m = 0;
-        return MODE_NAMES[m];
+        return MODE_NAMES[getMode()];
     }
 
     public static int cycleMode() {
-        int next = (getMode() + 1) % MODE_NAMES.length;
+        int next = isOn() ? 0 : 1;
         Hawk.put(HAWK_KEY, next);
         return next;
     }
 
     public static void setMode(int mode) {
-        if (mode < 0 || mode >= MODE_NAMES.length) mode = 0;
-        Hawk.put(HAWK_KEY, mode);
+        Hawk.put(HAWK_KEY, mode > 0 ? 1 : 0);
     }
 
     public static void applyToVideoView(View videoRoot) {
@@ -53,7 +51,6 @@ public final class PlayerZhenCaiHelper {
             gl.applyZhenCaiMode(getMode());
             return;
         }
-        // 回退：TextureView ColorMatrix（非 Exo/GL 路径）
         TextureView tv = findTextureView(videoRoot);
         if (tv == null) return;
         applyToTextureView(tv, getMode());
@@ -78,71 +75,20 @@ public final class PlayerZhenCaiHelper {
                 textureView.setLayerType(View.LAYER_TYPE_NONE, null);
                 return;
             }
-            ColorMatrix cm = buildMatrix(mode);
+            ColorMatrix cm = new ColorMatrix();
+            cm.setSaturation(1.35f);
+            ColorMatrix contrast = new ColorMatrix(new float[]{
+                    1.12f, 0, 0, 0, 6,
+                    0, 1.12f, 0, 0, 6,
+                    0, 0, 1.12f, 0, 6,
+                    0, 0, 0, 1, 0
+            });
+            cm.postConcat(contrast);
             Paint paint = new Paint();
             paint.setColorFilter(new ColorMatrixColorFilter(cm));
             textureView.setLayerType(View.LAYER_TYPE_HARDWARE, paint);
-            appliedOnViewHash = System.identityHashCode(textureView);
         } catch (Throwable ignored) {
         }
-    }
-
-    private static ColorMatrix buildMatrix(int mode) {
-        ColorMatrix cm = new ColorMatrix();
-        switch (mode) {
-            case 1: // 标准：轻微提亮对比
-                cm.setScale(1.05f, 1.05f, 1.05f, 1f);
-                break;
-            case 2: // 鲜明：饱和+对比
-                cm.setSaturation(1.45f);
-                ColorMatrix contrast = new ColorMatrix(new float[]{
-                        1.15f, 0, 0, 0, 8,
-                        0, 1.15f, 0, 0, 8,
-                        0, 0, 1.15f, 0, 8,
-                        0, 0, 0, 1, 0
-                });
-                cm.postConcat(contrast);
-                break;
-            case 3: // 柔和
-                cm.setSaturation(0.85f);
-                ColorMatrix soft = new ColorMatrix(new float[]{
-                        0.95f, 0, 0, 0, 12,
-                        0, 0.95f, 0, 0, 12,
-                        0, 0, 0.95f, 0, 12,
-                        0, 0, 0, 1, 0
-                });
-                cm.postConcat(soft);
-                break;
-            case 4: // 暖色
-                cm.set(new float[]{
-                        1.15f, 0, 0, 0, 10,
-                        0, 1.05f, 0, 0, 5,
-                        0, 0, 0.9f, 0, 0,
-                        0, 0, 0, 1, 0
-                });
-                break;
-            case 5: // 冷色
-                cm.set(new float[]{
-                        0.9f, 0, 0, 0, 0,
-                        0, 1.05f, 0, 0, 5,
-                        0, 0, 1.2f, 0, 12,
-                        0, 0, 0, 1, 0
-                });
-                break;
-            case 6: // 电影感：降饱和+抬对比
-                cm.setSaturation(0.7f);
-                ColorMatrix film = new ColorMatrix(new float[]{
-                        1.2f, 0, 0, 0, -10,
-                        0, 1.15f, 0, 0, -8,
-                        0, 0, 1.1f, 0, -5,
-                        0, 0, 0, 1, 0
-                });
-                cm.postConcat(film);
-                break;
-            default:
-                break;
-        }
-        return cm;
     }
 
     private static TextureView findTextureView(View root) {
