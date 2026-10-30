@@ -673,13 +673,21 @@ public class M3u8 {
 
         StringBuilder sb = new StringBuilder();
         boolean changed = false;
-        for (Group group : groups) {
-            if (shouldDropGroup(group, main)) {
+        int midRollRemoved = 0;
+        for (int i = 0; i < groups.size(); i++) {
+            Group group = groups.get(i);
+            if (shouldDropGroup(group, main, groups, i)) {
                 currentAdCount += group.segmentCount;
+                if (isMidRollAdGroup(group, main, groups, i)) {
+                    midRollRemoved += group.segmentCount;
+                }
                 changed = true;
                 continue;
             }
             group.appendTo(sb);
+        }
+        if (midRollRemoved > 0) {
+            LOG.i("echo-fixAdM3u8 mid-roll removed segments: " + midRollRemoved);
         }
         return changed ? sb.toString() : m3u8Content;
     }
@@ -708,10 +716,10 @@ public class M3u8 {
         return main;
     }
 
-    private static boolean shouldDropGroup(Group group, Group main) {
+    private static boolean shouldDropGroup(Group group, Group main, List<Group> groups, int index) {
         if (group == main || group.segmentCount == 0) return false;
 
-        // 增强：更严格的广告识别条件
+        // 原有：短组 + 异域/异路径/特征
         boolean shortGroup = group.segmentCount <= 2 ||
                            (main.totalDuration > 0 && group.totalDuration > 0 &&
                             group.totalDuration < main.totalDuration * 0.18);
@@ -722,13 +730,52 @@ public class M3u8 {
         boolean differentPath = main.pathPrefix.length() > 0 && group.pathPrefix.length() > 0 &&
                                !main.pathPrefix.equals(group.pathPrefix);
 
-        // 增强：检查广告域名和URL特征
         boolean hasAdFeature = group.adLikeCount > 0 || hasAdDomain(group.host) ||
                               isAdSegmentUri(group.pathPrefix);
 
         boolean adLike = hasAdFeature || differentHost || (group.segmentCount <= 2 && differentPath);
 
-        return shortGroup && adLike;
+        if (shortGroup && adLike) return true;
+
+        // 中插：同域同路径也可能是广告（如 4:56 博彩贴片约 30s）
+        return isMidRollAdGroup(group, main, groups, index);
+    }
+
+    /**
+     * 中插启发式：夹在两段更长正片之间、时长约 8–120 秒、远短于主内容。
+     * 不依赖异域/异路径，用于 dytt 等同 CDN 目录植入广告。
+     */
+    private static boolean isMidRollAdGroup(Group group, Group main, List<Group> groups, int index) {
+        if (group == null || main == null || groups == null) return false;
+        if (group == main || group.segmentCount == 0) return false;
+        if (index <= 0 || index >= groups.size() - 1) return false;
+
+        // 典型中插时长窗口（本例约 30s；排除极短噪声与过长章节）
+        if (group.totalDuration < 8.0 || group.totalDuration > 120.0) return false;
+        if (group.segmentCount > 50) return false;
+
+        // 主内容需足够长，避免短视频误伤
+        if (main.totalDuration < 90.0 && main.segmentCount < 30) return false;
+        if (group.totalDuration >= main.totalDuration * 0.25) return false;
+
+        Group prev = nearestMediaGroup(groups, index, -1);
+        Group next = nearestMediaGroup(groups, index, 1);
+        if (prev == null || next == null) return false;
+
+        // 前后都是明显更长的内容块
+        boolean prevLonger = prev.totalDuration >= Math.max(group.totalDuration * 1.5, 25.0)
+                || prev.segmentCount >= Math.max(group.segmentCount * 2, 8);
+        boolean nextLonger = next.totalDuration >= Math.max(group.totalDuration * 1.5, 25.0)
+                || next.segmentCount >= Math.max(group.segmentCount * 2, 8);
+        return prevLonger && nextLonger;
+    }
+
+    private static Group nearestMediaGroup(List<Group> groups, int from, int step) {
+        for (int i = from + step; i >= 0 && i < groups.size(); i += step) {
+            Group g = groups.get(i);
+            if (g != null && g.segmentCount > 0) return g;
+        }
+        return null;
     }
 
     private static String hostOf(String url) {
