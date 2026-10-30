@@ -83,6 +83,8 @@ public abstract class BaseActivity extends AppCompatActivity implements CustomAd
 
     @Override
     protected void onResume() {
+        // 主 Tab 页切换无动画，避免底部导航栏「整页盖上」
+        try { overridePendingTransition(0, 0); } catch (Throwable ignored) {}
         super.onResume();
         hideSysBar();
         changeWallpaper(false);

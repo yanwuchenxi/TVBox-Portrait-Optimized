@@ -11,22 +11,26 @@ import com.github.tvbox.osc.base.BaseActivity;
 import com.github.tvbox.osc.ui.activity.HistoryActivity;
 import com.github.tvbox.osc.ui.activity.HomeActivity;
 import com.github.tvbox.osc.ui.activity.LivePlayActivity;
-import com.github.tvbox.osc.ui.activity.SearchActivity;
 import com.github.tvbox.osc.ui.activity.SettingActivity;
 
 /**
- * 底部导航栏统一处理
+ * 底部导航栏统一处理。
+ * 架构上每个 Tab 仍是独立 Activity（各带一份导航栏），无法做到真正「单实例悬浮栏」。
+ * 通过 REORDER_TO_FRONT + 关闭切换动画，尽量减少「导航栏跟着整页盖上」的观感。
  */
 public class BottomNavHelper {
 
-    /**
-     * 返回首页（复用首页实例，不销毁当前页面，保证底部导航栏视觉固定）
-     */
+    private static Intent tabIntent(BaseActivity activity, Class<? extends BaseActivity> target) {
+        Intent intent = new Intent(activity, target);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT
+                | Intent.FLAG_ACTIVITY_NO_ANIMATION
+                | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        return intent;
+    }
+
     public static void goHome(BaseActivity activity) {
         if (activity instanceof HomeActivity) return;
-        Intent intent = new Intent(activity, HomeActivity.class);
-        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-        activity.startActivity(intent);
+        activity.startActivity(tabIntent(activity, HomeActivity.class));
         activity.overridePendingTransition(0, 0);
     }
 
@@ -58,10 +62,7 @@ public class BottomNavHelper {
                     if (!(activity instanceof SettingActivity)) target = SettingActivity.class;
                 }
                 if (target == null) return;
-                // 复用已有页面实例并取消切换动画，保持底部导航栏视觉固定
-                Intent intent = new Intent(activity, target);
-                intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
-                activity.startActivity(intent);
+                activity.startActivity(tabIntent(activity, target));
                 activity.overridePendingTransition(0, 0);
             }
         };
@@ -78,7 +79,6 @@ public class BottomNavHelper {
         int color = selected ? R.color.color_FFFFFF : R.color.color_BBFFFFFF;
         iv.setColorFilter(activity.getResources().getColor(color));
         tv.setTextColor(activity.getResources().getColor(color));
-        // 选中项使用与首页分类一致的胶囊背景高亮
         item.setBackgroundResource(selected ? R.drawable.bg_nav_item_selected : android.R.color.transparent);
     }
 }

@@ -21,6 +21,7 @@
 
     <!-- 手机竖屏主题：显示状态栏，内容避让状态栏 -->
     <style name="AppTheme.NoActionBar.Mobile" parent="AppTheme.NoActionBar">
+        <item name="android:windowAnimationStyle">@style/NoActivityAnimation</item>
         <item name="android:windowFullscreen">false</item>
         <item name="android:statusBarColor">#00000000</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
@@ -71,5 +72,20 @@
         <item name="android:windowFullscreen">false</item>
         <item name="android:windowSoftInputMode">stateVisible|adjustResize</item>
     </style>
+
+    <!-- 主 Tab 页切换无动画，减轻底部导航「整页覆盖」感 -->
+    <style name="NoActivityAnimation">
+        <item name="android:activityOpenEnterAnimation">@null</item>
+        <item name="android:activityOpenExitAnimation">@null</item>
+        <item name="android:activityCloseEnterAnimation">@null</item>
+        <item name="android:activityCloseExitAnimation">@null</item>
+        <item name="android:taskOpenEnterAnimation">@null</item>
+        <item name="android:taskOpenExitAnimation">@null</item>
+        <item name="android:taskCloseEnterAnimation">@null</item>
+        <item name="android:taskCloseExitAnimation">@null</item>
+        <item name="android:taskToFrontEnterAnimation">@null</item>
+        <item name="android:taskToFrontExitAnimation">@null</item>
+    </style>
 </resources>
+
 
