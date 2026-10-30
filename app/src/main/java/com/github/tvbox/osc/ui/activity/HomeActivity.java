@@ -445,8 +445,8 @@ public class HomeActivity extends BaseActivity {
     private String formatSiteName(String name) {
         if (name == null) return "";
         String trimmed = name.trim();
-        if (trimmed.length() > 10) {
-            trimmed = trimmed.substring(0, 10);
+        if (trimmed.length() > 12) {
+            trimmed = trimmed.substring(0, 12);
             // 截断后若末尾残留括号/标点，去掉，避免出现半截符号
             while (trimmed.length() > 0 && "([{（【「|/-—·・:：,，.。 ".indexOf(trimmed.charAt(trimmed.length() - 1)) >= 0) {
                 trimmed = trimmed.substring(0, trimmed.length() - 1);
@@ -1064,8 +1064,9 @@ public class HomeActivity extends BaseActivity {
             clp.width = AutoSizeUtils.mm2px(mSiteSwitchDialog.getContext(), 380 + 200 * spanCount);
             int maxWidth = mContext.getResources().getDisplayMetrics().widthPixels - AutoSizeUtils.mm2px(mSiteSwitchDialog.getContext(), 40);
             if (clp.width > maxWidth) clp.width = maxWidth;
-            mSiteSwitchDialog.setTip("请选择首页数据源");
+            mSiteSwitchDialog.setTip("全部站点");
         }
+        mSiteSwitchDialog.setTip("全部站点");
         mSiteSwitchDialog.setAdapter(new SelectDialogAdapter.SelectDialogInterface<SourceBean>() {
             @Override
             public void click(SourceBean value, int pos) {

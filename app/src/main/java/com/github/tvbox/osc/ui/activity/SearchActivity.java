@@ -139,7 +139,12 @@ public class SearchActivity extends BaseActivity {
         tvHistoryClear = findViewById(R.id.tvHistoryClear);
         mGridView.setHasFixedSize(true);
         // 搜索结果为 2 列海报缩略图布局（左侧站点标签 + 右侧 2 列）
-        mGridView.setLayoutManager(new V7GridLayoutManager(this.mContext, 2));
+        boolean posterMode = Hawk.get(HawkConfig.SEARCH_VIEW, 0) == 1;
+        if (posterMode) {
+            mGridView.setLayoutManager(new V7GridLayoutManager(this.mContext, 2));
+        } else {
+            mGridView.setLayoutManager(new V7LinearLayoutManager(this.mContext, 1, false));
+        }
         searchAdapter = new SearchAdapter();
         mGridView.setAdapter(searchAdapter);
         searchAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {

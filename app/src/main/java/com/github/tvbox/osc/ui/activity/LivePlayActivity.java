@@ -1806,6 +1806,11 @@ public class LivePlayActivity extends BaseActivity {
                 vlp.height = ViewGroup.LayoutParams.MATCH_PARENT;
                 mVideoView.setLayoutParams(vlp);
             }
+            // 铺满屏幕，避免 16:9 在全面屏左右留黑边
+            try {
+                mVideoView.setScreenScaleType(xyz.doikki.videoplayer.player.VideoView.SCREEN_SCALE_MATCH_PARENT);
+            } catch (Throwable ignored) {
+            }
             mVideoView.requestLayout();
         }
         if (btnLiveFullscreen != null) {
@@ -1845,6 +1850,12 @@ public class LivePlayActivity extends BaseActivity {
                     clp.height = 0;
                     videoArea.setLayoutParams(clp);
                 }
+            }
+        }
+        if (mVideoView != null) {
+            try {
+                mVideoView.setScreenScaleType(xyz.doikki.videoplayer.player.VideoView.SCREEN_SCALE_DEFAULT);
+            } catch (Throwable ignored) {
             }
         }
         if (btnLiveFullscreen != null) {

@@ -218,7 +218,9 @@ public class ModelSettingFragment extends BaseLazyFragment {
             public void onClick(View v) {
                 FastClickCheckUtil.check(v);
                 Toast.makeText(mContext, "壁纸下载中...", Toast.LENGTH_SHORT).show();
-                OkGo.<File>get("http://127.0.0.1:9978/proxy?do=wallpaper").execute(new FileCallback(requireActivity().getFilesDir().getAbsolutePath(), "wp") {
+                final String dir = requireActivity().getFilesDir().getAbsolutePath();
+                // 优先本地代理，失败则走公开图源，避免「功能无效」
+                OkGo.<File>get("http://127.0.0.1:9978/proxy?do=wallpaper").execute(new FileCallback(dir, "wp") {
                         @Override
                         public void onSuccess(Response<File> response) {
                             ((BaseActivity) requireActivity()).changeWallpaper(true);
@@ -227,8 +229,21 @@ public class ModelSettingFragment extends BaseLazyFragment {
 
                         @Override
                         public void onError(Response<File> response) {
-                            super.onError(response);
-                            Toast.makeText(mContext, "壁纸下载失败", Toast.LENGTH_SHORT).show();
+                            // fallback public wallpaper
+                            long seed = System.currentTimeMillis() % 10000;
+                            OkGo.<File>get("https://picsum.photos/seed/" + seed + "/1080/1920")
+                                    .execute(new FileCallback(dir, "wp") {
+                                        @Override
+                                        public void onSuccess(Response<File> response) {
+                                            ((BaseActivity) requireActivity()).changeWallpaper(true);
+                                            Toast.makeText(mContext, "壁纸已更换", Toast.LENGTH_SHORT).show();
+                                        }
+
+                                        @Override
+                                        public void onError(Response<File> response) {
+                                            Toast.makeText(mContext, "壁纸下载失败", Toast.LENGTH_SHORT).show();
+                                        }
+                                    });
                         }
 
                         @Override
@@ -594,6 +609,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
                         Hawk.put(HawkConfig.PLAY_RENDER, value);
                         tvRender.setText(PlayerHelper.getRenderName(value));
                         PlayerHelper.init();
+                        Toast.makeText(mContext, "渲染方式已切换，重新播放后生效", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -665,6 +681,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
                     public void click(Integer value, int pos) {
                         Hawk.put(HawkConfig.SEARCH_VIEW, value);
                         tvSearchView.setText(getSearchView(value));
+                        Toast.makeText(mContext, "搜索展示已切换，下次进入搜索页生效", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -792,6 +809,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
                 FastClickCheckUtil.check(v);
                 Hawk.put(HawkConfig.HOME_REC_STYLE, !Hawk.get(HawkConfig.HOME_REC_STYLE, false));
                 tvRecStyleText.setText(Hawk.get(HawkConfig.HOME_REC_STYLE, false) ? "是" : "否");
+                Toast.makeText(mContext, "首页多行已切换，返回首页刷新后生效", Toast.LENGTH_SHORT).show();
             }
         });
 

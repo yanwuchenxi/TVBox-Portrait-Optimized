@@ -87,8 +87,11 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
         super.onFragmentResume();
         tvHotList.setVisibility(View.VISIBLE);
         tvHotList.setHasFixedSize(true);
-        int spanCount = 3;
-        if (getResources().getConfiguration().orientation != android.content.res.Configuration.ORIENTATION_PORTRAIT) spanCount = 5;
+        // 首页多行：开启时用更紧凑多列网格；关闭时 2 列（偏列表感）
+        int spanCount = Hawk.get(HawkConfig.HOME_REC_STYLE, false) ? 3 : 2;
+        if (getResources().getConfiguration().orientation != android.content.res.Configuration.ORIENTATION_PORTRAIT) {
+            spanCount = Hawk.get(HawkConfig.HOME_REC_STYLE, false) ? 5 : 4;
+        }
         if (style != null && Hawk.get(HawkConfig.HOME_REC, HawkConfig.DEFAULT_HOME_REC) == 1) spanCount = ImgUtil.spanCountByStyle(style, spanCount);
         tvHotList.setLayoutManager(new V7GridLayoutManager(this.mContext, spanCount));
         int paddingLeft = -tvHotList.mHorizontalSpacingWithMargins / 2 + getResources().getDimensionPixelSize(R.dimen.vs_6);

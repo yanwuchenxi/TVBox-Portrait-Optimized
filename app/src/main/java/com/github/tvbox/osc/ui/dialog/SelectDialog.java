@@ -6,12 +6,9 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.DiffUtil;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
 
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.ui.adapter.SelectDialogAdapter;
-import com.owen.tvrecyclerview.widget.GridLayoutManager;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 
 import org.jetbrains.annotations.NotNull;
@@ -41,24 +38,31 @@ public class SelectDialog<T> extends BaseDialog {
     public void setAdapter(SelectDialogAdapter.SelectDialogInterface<T> sourceBeanSelectDialogInterface,
                            DiffUtil.ItemCallback<T> sourceBeanItemCallback,
                            List<T> data, int select) {
-        final int selectIdx = select;
+        final int selectIdx = Math.max(0, select);
         SelectDialogAdapter<T> adapter = new SelectDialogAdapter<>(sourceBeanSelectDialogInterface, sourceBeanItemCallback);
-        adapter.setData(data, select);
-        TvRecyclerView tvRecyclerView = findViewById(R.id.list);
+        adapter.setData(data, selectIdx);
+        final TvRecyclerView tvRecyclerView = findViewById(R.id.list);
         tvRecyclerView.setAdapter(adapter);
-        tvRecyclerView.setSelectedPosition(select);
-        if (select<10){
-            tvRecyclerView.setSelection(select);
-        }
+        tvRecyclerView.setSelectedPosition(selectIdx);
+        tvRecyclerView.setSelection(selectIdx);
         tvRecyclerView.post(new Runnable() {
             @Override
             public void run() {
-                if (selectIdx >= 10) {
+                tvRecyclerView.scrollToPosition(selectIdx);
+                tvRecyclerView.setSelection(selectIdx);
+                try {
                     tvRecyclerView.smoothScrollToPosition(selectIdx);
-                    tvRecyclerView.setSelectionWithSmooth(selectIdx);
+                } catch (Throwable ignored) {
                 }
             }
         });
+        // 再次延迟，确保网格布局测量完成后再定位
+        tvRecyclerView.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                tvRecyclerView.scrollToPosition(selectIdx);
+                tvRecyclerView.setSelection(selectIdx);
+            }
+        }, 120);
     }
-
 }
