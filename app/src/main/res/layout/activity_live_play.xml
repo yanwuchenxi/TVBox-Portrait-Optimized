@@ -630,7 +630,6 @@
         <!-- 收藏频道 -->
         <LinearLayout
             android:id="@+id/live_favorites_bar"
-            android:visibility="gone"
                     android:visibility="gone"
             android:layout_width="match_parent"
             android:layout_height="@dimen/vs_76"
