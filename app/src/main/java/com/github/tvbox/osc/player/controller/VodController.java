@@ -46,6 +46,10 @@ import com.github.tvbox.osc.ui.dialog.SelectDialog;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.DanmuHelper;
 import com.github.tvbox.osc.util.HawkConfig;
+import com.github.tvbox.osc.player.effect.PlayerAudioFxHelper;
+import com.github.tvbox.osc.player.effect.PlayerZhenCaiHelper;
+import com.github.tvbox.osc.player.effect.PlayerEffectBridge;
+import xyz.doikki.videoplayer.player.VideoView;
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.M3u8;
 import com.github.tvbox.osc.util.PlayerHelper;
@@ -214,6 +218,8 @@ public class VodController extends BaseController {
     TextView mPreBtn;
     TextView mPlayerScaleBtn;
     public TextView mPlayerSpeedBtn;
+    TextView mAudioFxBtn;
+    TextView mZhenCaiBtn;
     TextView mPlayerBtn;
     TextView mPlayerIJKBtn;
     TextView mPlayerRetry;
@@ -349,6 +355,8 @@ public class VodController extends BaseController {
         mPreBtn = findViewById(R.id.play_pre);
         mPlayerScaleBtn = findViewById(R.id.play_scale);
         mPlayerSpeedBtn = findViewById(R.id.play_speed);
+        mAudioFxBtn = findViewById(R.id.play_audio_fx);
+        mZhenCaiBtn = findViewById(R.id.play_zhencai);
         mPlayerBtn = findViewById(R.id.play_player);
         mPlayerIJKBtn = findViewById(R.id.play_ijk);
         mPlayerTimeStartEndText = findViewById(R.id.play_time_start_end_text);
@@ -672,7 +680,38 @@ public class VodController extends BaseController {
                 return true;
             }
         });
-        mPlayerBtn.setOnClickListener(new OnClickListener() {
+        
+        if (mAudioFxBtn != null) {
+            mAudioFxBtn.setText(PlayerAudioFxHelper.getModeName());
+            mAudioFxBtn.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    myHandle.removeCallbacks(myRunnable);
+                    myHandle.postDelayed(myRunnable, myHandleSeconds);
+                    FastClickCheckUtil.check(view);
+                    int mode = PlayerAudioFxHelper.cycleMode();
+                    mAudioFxBtn.setText(PlayerAudioFxHelper.MODE_NAMES[mode]);
+                    tryApplyPlayerEffects();
+                    Toast.makeText(getContext(), "音效：" + PlayerAudioFxHelper.MODE_NAMES[mode], Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+        if (mZhenCaiBtn != null) {
+            mZhenCaiBtn.setText(PlayerZhenCaiHelper.getModeName());
+            mZhenCaiBtn.setOnClickListener(new OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    myHandle.removeCallbacks(myRunnable);
+                    myHandle.postDelayed(myRunnable, myHandleSeconds);
+                    FastClickCheckUtil.check(view);
+                    int mode = PlayerZhenCaiHelper.cycleMode();
+                    mZhenCaiBtn.setText(PlayerZhenCaiHelper.MODE_NAMES[mode]);
+                    tryApplyPlayerEffects();
+                    Toast.makeText(getContext(), "臻彩：" + PlayerZhenCaiHelper.MODE_NAMES[mode], Toast.LENGTH_SHORT).show();
+                }
+            });
+        }
+mPlayerBtn.setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View view) {
                 myHandle.removeCallbacks(myRunnable);
@@ -2196,4 +2235,45 @@ public class VodController extends BaseController {
             return (int) (value * context.getResources().getDisplayMetrics().density + 0.5f);
         }
     }
+    private void tryApplyPlayerEffects() {
+        try {
+            VideoView<?> vv = findHostVideoView();
+            if (vv != null) PlayerEffectBridge.applyAll(vv);
+            else {
+                PlayerAudioFxHelper.reapply();
+            }
+        } catch (Throwable ignored) {
+        }
+    }
+
+    private VideoView<?> findHostVideoView() {
+        try {
+            if (mControlWrapper == null) return null;
+            // ControlWrapper holds MediaPlayerControl which is VideoView
+            java.lang.reflect.Field f = mControlWrapper.getClass().getDeclaredField("mPlayerControl");
+            f.setAccessible(true);
+            Object c = f.get(mControlWrapper);
+            if (c instanceof VideoView) return (VideoView<?>) c;
+        } catch (Throwable ignored) {
+        }
+        View root = getParent() instanceof View ? (View) getParent() : this;
+        for (int i = 0; i < 6 && root != null; i++) {
+            if (root instanceof VideoView) return (VideoView<?>) root;
+            if (root.getParent() instanceof View) root = (View) root.getParent();
+            else break;
+        }
+        return null;
+    }
+
+    public void onPlayPreparedForEffects() {
+        if (mAudioFxBtn != null) mAudioFxBtn.setText(PlayerAudioFxHelper.getModeName());
+        if (mZhenCaiBtn != null) mZhenCaiBtn.setText(PlayerZhenCaiHelper.getModeName());
+        postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                tryApplyPlayerEffects();
+            }
+        }, 400);
+    }
+
 }

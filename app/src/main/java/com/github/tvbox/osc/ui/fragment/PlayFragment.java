@@ -61,6 +61,7 @@ import com.github.tvbox.osc.player.MusicPlaybackService;
 import com.github.tvbox.osc.player.TrackInfo;
 import com.github.tvbox.osc.player.TrackInfoBean;
 import com.github.tvbox.osc.player.controller.VodController;
+import com.github.tvbox.osc.player.effect.PlayerEffectBridge;
 import com.github.tvbox.osc.player.danmu.DanmuLoadController;
 import com.github.tvbox.osc.server.ControlManager;
 import com.github.tvbox.osc.ui.adapter.SelectDialogAdapter;
@@ -359,6 +360,11 @@ public class PlayFragment extends BaseLazyFragment {
                 }
                 if (!switchingPlayback) updateMusicSession();
                 startDanmuIfReady();
+                if (playState == VideoView.STATE_PLAYING || playState == VideoView.STATE_PREPARED
+                        || playState == VideoView.STATE_BUFFERED) {
+                    if (mController != null) mController.onPlayPreparedForEffects();
+                    else PlayerEffectBridge.applyAll(mVideoView);
+                }
             }
         });
         mController.setListener(new VodController.VodControlListener() {
@@ -1586,6 +1592,7 @@ public class PlayFragment extends BaseLazyFragment {
 
     @Override
     public void onDestroyView() {
+        try { PlayerEffectBridge.release(); } catch (Throwable ignored) {}
         audioPlayback = false;
         switchingPlayback = false;
         MusicPlaybackService.stop(getContext(), this);
