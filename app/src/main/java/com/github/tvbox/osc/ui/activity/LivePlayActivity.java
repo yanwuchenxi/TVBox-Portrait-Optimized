@@ -1744,11 +1744,22 @@ public class LivePlayActivity extends BaseActivity {
     private void enterLiveFullScreen() {
         if (liveFullScreen) return;
         liveFullScreen = true;
+        isBack = true;
         if (isSettingsPanelShowing()) {
             hideLiveSettingsPanel();
         }
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        View decor = getWindow().getDecorView();
+        if (decor != null) {
+            decor.setSystemUiVisibility(
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+                            | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_FULLSCREEN
+                            | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                            | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        }
         View root = findViewById(R.id.live_root);
         if (root != null) {
             savedRootPadding = new int[]{root.getPaddingLeft(), root.getPaddingTop(),
@@ -1759,10 +1770,13 @@ public class LivePlayActivity extends BaseActivity {
         if (liveFavoritesBar != null) liveFavoritesBar.setVisibility(View.GONE);
         if (tvLeftChannelListLayout != null) tvLeftChannelListLayout.setVisibility(View.GONE);
         if (liveBottomNav != null) liveBottomNav.setVisibility(View.GONE);
+        // 播放器容器与视频区撑满全屏
         if (liveVideoWrap != null) {
             ViewGroup.LayoutParams lp = liveVideoWrap.getLayoutParams();
+            lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
             lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
             liveVideoWrap.setLayoutParams(lp);
+            liveVideoWrap.requestLayout();
         }
         View videoArea = findViewById(R.id.live_video_area);
         if (videoArea != null) {
@@ -1771,10 +1785,28 @@ public class LivePlayActivity extends BaseActivity {
                 savedVideoAreaLayoutParams = new ConstraintLayout.LayoutParams((ConstraintLayout.LayoutParams) lp);
                 ConstraintLayout.LayoutParams clp = (ConstraintLayout.LayoutParams) lp;
                 clp.dimensionRatio = null;
+                clp.topToTop = ConstraintLayout.LayoutParams.PARENT_ID;
                 clp.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID;
+                clp.leftToLeft = ConstraintLayout.LayoutParams.PARENT_ID;
+                clp.rightToRight = ConstraintLayout.LayoutParams.PARENT_ID;
+                clp.width = ViewGroup.LayoutParams.MATCH_PARENT;
                 clp.height = ViewGroup.LayoutParams.MATCH_PARENT;
                 videoArea.setLayoutParams(clp);
+            } else {
+                lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                videoArea.setLayoutParams(lp);
             }
+            videoArea.requestLayout();
+        }
+        if (mVideoView != null) {
+            ViewGroup.LayoutParams vlp = mVideoView.getLayoutParams();
+            if (vlp != null) {
+                vlp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+                vlp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+                mVideoView.setLayoutParams(vlp);
+            }
+            mVideoView.requestLayout();
         }
         if (btnLiveFullscreen != null) {
             btnLiveFullscreen.setImageResource(R.drawable.live_ic_fullscreen_exit);
@@ -1792,7 +1824,7 @@ public class LivePlayActivity extends BaseActivity {
             savedRootPadding = null;
         }
         if (ll_epg != null) ll_epg.setVisibility(View.VISIBLE);
-        if (liveFavoritesBar != null) liveFavoritesBar.setVisibility(View.VISIBLE);
+        if (liveFavoritesBar != null) liveFavoritesBar.setVisibility(View.GONE);
         if (tvLeftChannelListLayout != null) tvLeftChannelListLayout.setVisibility(View.VISIBLE);
         if (liveBottomNav != null) liveBottomNav.setVisibility(View.VISIBLE);
         if (liveVideoWrap != null) {

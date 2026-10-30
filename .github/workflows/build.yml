@@ -8,15 +8,6 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - task: assembleJavaDebug
-            artifact: tvbox-java-debug-apk
-          - task: assemblePython64Debug
-            artifact: tvbox-python64-debug-apk
-            need_python: true
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -28,7 +19,6 @@ jobs:
           java-version: "17"
 
       - name: Setup Python 3.8
-        if: matrix.need_python
         uses: actions/setup-python@v5
         with:
           python-version: "3.8"
@@ -44,12 +34,9 @@ jobs:
       - name: Create local.properties
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          if [ "${{ matrix.need_python }}" = "true" ]; then
-            echo "chaquopy.python.version=3.8" >> local.properties || true
-          fi
 
-      - name: Build APK (${{ matrix.task }})
-        run: ./gradlew ${{ matrix.task }} --stacktrace --no-daemon
+      - name: Build python64 Debug APK
+        run: ./gradlew assemblePython64Debug --stacktrace --no-daemon
 
       - name: List outputs
         if: always()
@@ -59,6 +46,6 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: ${{ matrix.artifact }}
+          name: tvbox-python64-debug-apk
           path: app/build/outputs/apk/**/*.apk
           if-no-files-found: warn

@@ -69,10 +69,10 @@ import java.util.concurrent.atomic.AtomicInteger;
  * 搜索页（手机版）：顶部搜索框+搜索源+搜索按钮，下方搜索历史，结果原地展示
  */
 public class SearchActivity extends BaseActivity {
-    private static final int SEARCH_THREAD_COUNT = 6;
-    private static final int SEARCH_MAX_THREAD_COUNT = Build.VERSION.SDK_INT >= 35 ? 24 : Build.VERSION.SDK_INT >= 30 ? 18 : 12;
-    private static final int SEARCH_NEXT_BATCH_SECONDS = 1;
-    private static final int SEARCH_SITE_TIMEOUT_SECONDS = 10;
+    private static final int SEARCH_THREAD_COUNT = 12;
+    private static final int SEARCH_MAX_THREAD_COUNT = 24;
+    private static final int SEARCH_NEXT_BATCH_SECONDS = 0;
+    private static final int SEARCH_SITE_TIMEOUT_SECONDS = 4;
     private LinearLayout llLayout;
     private LinearLayout llHistoryWord;
     private LinearLayout llSiteLabels;
@@ -700,7 +700,7 @@ public class SearchActivity extends BaseActivity {
     }
 
     private ExecutorService createSearchExecutor() {
-        return new ThreadPoolExecutor(0, SEARCH_MAX_THREAD_COUNT, 30L, TimeUnit.SECONDS, new SynchronousQueue<Runnable>());
+        return new ThreadPoolExecutor(8, SEARCH_MAX_THREAD_COUNT, 30L, TimeUnit.SECONDS, new java.util.concurrent.LinkedBlockingQueue<Runnable>());
     }
 
     private void startNextSearchBatch(String searchToken) {
