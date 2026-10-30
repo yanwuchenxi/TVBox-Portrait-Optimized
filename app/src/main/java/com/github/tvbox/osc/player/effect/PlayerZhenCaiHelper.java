@@ -6,6 +6,7 @@ import android.graphics.Paint;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import com.github.tvbox.osc.player.render.GlShaderRenderView;
 
 import com.orhanobut.hawk.Hawk;
 
@@ -47,9 +48,27 @@ public final class PlayerZhenCaiHelper {
 
     public static void applyToVideoView(View videoRoot) {
         if (videoRoot == null) return;
+        GlShaderRenderView gl = findGlView(videoRoot);
+        if (gl != null) {
+            gl.applyZhenCaiMode(getMode());
+            return;
+        }
+        // 回退：TextureView ColorMatrix（非 Exo/GL 路径）
         TextureView tv = findTextureView(videoRoot);
         if (tv == null) return;
         applyToTextureView(tv, getMode());
+    }
+
+    private static GlShaderRenderView findGlView(View root) {
+        if (root instanceof GlShaderRenderView) return (GlShaderRenderView) root;
+        if (root instanceof ViewGroup) {
+            ViewGroup vg = (ViewGroup) root;
+            for (int i = 0; i < vg.getChildCount(); i++) {
+                GlShaderRenderView g = findGlView(vg.getChildAt(i));
+                if (g != null) return g;
+            }
+        }
+        return null;
     }
 
     public static void applyToTextureView(TextureView textureView, int mode) {

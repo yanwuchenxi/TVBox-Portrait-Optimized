@@ -704,10 +704,18 @@ public class VodController extends BaseController {
                     myHandle.removeCallbacks(myRunnable);
                     myHandle.postDelayed(myRunnable, myHandleSeconds);
                     FastClickCheckUtil.check(view);
+                    int prev = PlayerZhenCaiHelper.getMode();
                     int mode = PlayerZhenCaiHelper.cycleMode();
                     mZhenCaiBtn.setText(PlayerZhenCaiHelper.MODE_NAMES[mode]);
                     tryApplyPlayerEffects();
-                    Toast.makeText(getContext(), "臻彩：" + PlayerZhenCaiHelper.MODE_NAMES[mode], Toast.LENGTH_SHORT).show();
+                    // 从关→开或开→关需要切换 GL 渲染管线，需重载播放器
+                    boolean needReplay = (prev == 0) != (mode == 0);
+                    if (needReplay && listener != null) {
+                        Toast.makeText(getContext(), "臻彩：" + PlayerZhenCaiHelper.MODE_NAMES[mode] + "（切换管线，重载中）", Toast.LENGTH_SHORT).show();
+                        listener.replay(true);
+                    } else {
+                        Toast.makeText(getContext(), "臻彩：" + PlayerZhenCaiHelper.MODE_NAMES[mode] + "（Exo Shader）", Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
         }

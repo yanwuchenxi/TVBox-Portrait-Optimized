@@ -27,6 +27,8 @@ import xyz.doikki.videoplayer.player.PlayerFactory;
 import xyz.doikki.videoplayer.player.VideoView;
 import xyz.doikki.videoplayer.render.RenderViewFactory;
 import xyz.doikki.videoplayer.render.TextureRenderViewFactory;
+import com.github.tvbox.osc.player.render.GlShaderRenderViewFactory;
+import com.github.tvbox.osc.player.effect.PlayerZhenCaiHelper;
 
 public class PlayerHelper {
     public static void updateCfg(VideoView videoView, JSONObject playerCfg) {
@@ -46,6 +48,12 @@ public class PlayerHelper {
             e.printStackTrace();
         }
         if(forcePlayerType>=0)playerType = forcePlayerType;
+        // 臻彩真 shader 依赖 Exo + GL 渲染管线
+        boolean zhenCaiOn = PlayerZhenCaiHelper.getMode() > 0;
+        if (zhenCaiOn) {
+            playerType = 2;
+            renderType = 0;
+        }
         IJKCode codec = ApiConfig.get().getIJKCodec(ijkCode);
         PlayerFactory playerFactory;
         if (playerType == 1) {
@@ -75,14 +83,19 @@ public class PlayerHelper {
             playerFactory = ExoMediaPlayerFactory.create();
         }
         RenderViewFactory renderViewFactory = null;
-        switch (renderType) {
-            case 0:
-            default:
-                renderViewFactory = TextureRenderViewFactory.create();
-                break;
-            case 1:
-                renderViewFactory = SurfaceRenderViewFactory.create();
-                break;
+        if (zhenCaiOn) {
+            // 真 shader 臻彩：OES + fragment shader
+            renderViewFactory = GlShaderRenderViewFactory.create();
+        } else {
+            switch (renderType) {
+                case 0:
+                default:
+                    renderViewFactory = TextureRenderViewFactory.create();
+                    break;
+                case 1:
+                    renderViewFactory = SurfaceRenderViewFactory.create();
+                    break;
+            }
         }
         if(videoView!=null){
             videoView.setPlayerFactory(playerFactory);
@@ -93,6 +106,12 @@ public class PlayerHelper {
 
     public static void updateCfg(VideoView videoView) {
         int playType = Hawk.get(HawkConfig.PLAY_TYPE, 2);
+        int renderType = Hawk.get(HawkConfig.PLAY_RENDER, 0);
+        boolean zhenCaiOn2 = PlayerZhenCaiHelper.getMode() > 0;
+        if (zhenCaiOn2) {
+            playType = 2;
+            renderType = 0;
+        }
         PlayerFactory playerFactory;
         if (playType == 1) {
             playerFactory = new PlayerFactory<IjkMediaPlayer>() {
@@ -115,21 +134,16 @@ public class PlayerHelper {
             } catch (Throwable th) {
                 th.printStackTrace();
             }
-        } else if (playType == 2) {
-            playerFactory = ExoMediaPlayerFactory.create();
         } else {
             playerFactory = ExoMediaPlayerFactory.create();
         }
-        int renderType = Hawk.get(HawkConfig.PLAY_RENDER, 0);
-        RenderViewFactory renderViewFactory = null;
-        switch (renderType) {
-            case 0:
-            default:
-                renderViewFactory = TextureRenderViewFactory.create();
-                break;
-            case 1:
-                renderViewFactory = SurfaceRenderViewFactory.create();
-                break;
+        RenderViewFactory renderViewFactory;
+        if (zhenCaiOn2) {
+            renderViewFactory = GlShaderRenderViewFactory.create();
+        } else if (renderType == 1) {
+            renderViewFactory = SurfaceRenderViewFactory.create();
+        } else {
+            renderViewFactory = TextureRenderViewFactory.create();
         }
         videoView.setPlayerFactory(playerFactory);
         videoView.setRenderViewFactory(renderViewFactory);
