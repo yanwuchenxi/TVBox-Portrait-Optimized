@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 透明底板，随全局壁纸显示；轻微暗色保证文字可读 -->
+<!-- 半透明深色，透出壁纸同时保证频道名/节目单可读 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="#66000000" />
+    <solid android:color="#990A1628" />
 </shape>

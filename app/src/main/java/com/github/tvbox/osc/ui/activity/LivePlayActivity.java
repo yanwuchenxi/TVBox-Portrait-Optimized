@@ -1746,7 +1746,7 @@ public class LivePlayActivity extends BaseActivity {
     private void enterLiveFullScreen() {
         if (liveFullScreen) return;
         liveFullScreen = true;
-        isBack = true;
+        // 不再借用 isBack（时移标记），避免退出全屏后进度条/EPG 状态错乱
         if (isSettingsPanelShowing()) {
             hideLiveSettingsPanel();
         }
@@ -1838,6 +1838,8 @@ public class LivePlayActivity extends BaseActivity {
     private void exitLiveFullScreen() {
         if (!liveFullScreen) return;
         liveFullScreen = false;
+        // 全屏时为显示控件临时置 isBack，退出后必须复位，否则进度条常显、EPG 条被隐藏
+        isBack = false;
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
                 | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
@@ -1860,9 +1862,11 @@ public class LivePlayActivity extends BaseActivity {
             }
             root.requestApplyInsets();
         }
+        if (backcontroller != null) backcontroller.setVisibility(View.GONE);
         if (ll_epg != null) ll_epg.setVisibility(View.VISIBLE);
         if (liveFavoritesBar != null) liveFavoritesBar.setVisibility(View.GONE);
         if (tvLeftChannelListLayout != null) tvLeftChannelListLayout.setVisibility(View.VISIBLE);
+        try { showProgressBars(false); } catch (Throwable ignored) {}
         if (liveBottomNav != null) liveBottomNav.setVisibility(View.VISIBLE);
         if (liveVideoWrap != null) {
             ViewGroup.LayoutParams lp = liveVideoWrap.getLayoutParams();
