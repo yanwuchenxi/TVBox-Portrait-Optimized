@@ -673,25 +673,98 @@ public class M3u8 {
         Group main = findMainGroup(groups);
         if (main == null || main.segmentCount < 3) return m3u8Content;
 
+        // 先标记「连续短组中插簇」（本源广告被拆成 G13+G14 等多段）
+        boolean[] drop = markMidRollClusters(groups, main);
+        for (int i = 0; i < groups.size(); i++) {
+            if (!drop[i] && shouldDropGroup(groups.get(i), main, groups, i)) {
+                drop[i] = true;
+            }
+        }
+
         StringBuilder sb = new StringBuilder();
         boolean changed = false;
         int midRollRemoved = 0;
         for (int i = 0; i < groups.size(); i++) {
             Group group = groups.get(i);
-            if (shouldDropGroup(group, main, groups, i)) {
+            if (drop[i]) {
                 currentAdCount += group.segmentCount;
-                if (isMidRollAdGroup(group, main, groups, i)) {
-                    midRollRemoved += group.segmentCount;
-                }
+                midRollRemoved += group.segmentCount;
                 changed = true;
                 continue;
             }
             group.appendTo(sb);
         }
         if (midRollRemoved > 0) {
-            LOG.i("echo-fixAdM3u8 mid-roll removed segments: " + midRollRemoved);
+            LOG.i("echo-fixAdM3u8 mid-roll/cluster removed segments: " + midRollRemoved);
         }
-        return changed ? sb.toString() : m3u8Content;
+        return changed ? normalizeMediaPlaylist(sb.toString()) : m3u8Content;
+    }
+
+    /**
+     * 连续「异常碎组」合并为中插簇删除。
+     * 本源正片也按 ~5 段/20s 切开；广告常变成相邻 2–4 段的更碎组（如 3+2 段 ≈19s @4:56）。
+     * 用「切片数低于众数」区分，避免把正常 5 段正片块整段误删。
+     */
+    private static boolean[] markMidRollClusters(List<Group> groups, Group main) {
+        boolean[] drop = new boolean[groups.size()];
+        if (groups.size() < 3) return drop;
+
+        int modeSegs = dominantSegmentCount(groups);
+        if (modeSegs < 3) modeSegs = 5; // 兜底
+
+        for (int i = 0; i < groups.size(); ) {
+            if (groups.get(i).segmentCount == 0) { i++; continue; }
+            if (!isFragmentAdCandidate(groups.get(i), modeSegs)) { i++; continue; }
+
+            int j = i;
+            double clusterDur = 0;
+            int clusterSegs = 0;
+            while (j < groups.size() && isFragmentAdCandidate(groups.get(j), modeSegs)) {
+                clusterDur += groups.get(j).totalDuration;
+                clusterSegs += groups.get(j).segmentCount;
+                j++;
+            }
+            // 中插窗口：约 8–90 秒（录屏约 30s；本清单 G13+G14≈19s）
+            if (clusterDur >= 6.0 && clusterDur <= 90.0 && clusterSegs >= 2) {
+                Group prev = nearestMediaGroup(groups, i, -1);
+                Group next = nearestMediaGroup(groups, j - 1, 1);
+                boolean prevOk = prev != null && (prev.segmentCount >= modeSegs
+                        || prev.totalDuration >= Math.max(clusterDur * 0.9, 15.0));
+                boolean nextOk = next != null && (next.segmentCount >= modeSegs
+                        || next.totalDuration >= Math.max(clusterDur * 0.9, 15.0));
+                if (prevOk && nextOk) {
+                    for (int k = i; k < j; k++) drop[k] = true;
+                    LOG.i("echo-fixAdM3u8 fragment-cluster drop [" + i + "," + (j - 1)
+                            + "] dur=" + clusterDur + " modeSegs=" + modeSegs);
+                }
+            }
+            i = Math.max(j, i + 1);
+        }
+        return drop;
+    }
+
+    /** 众数切片数：正片块最常见的每组段数（本源为 5） */
+    private static int dominantSegmentCount(List<Group> groups) {
+        java.util.HashMap<Integer, Integer> freq = new java.util.HashMap<>();
+        int best = 0, bestCnt = 0;
+        for (Group g : groups) {
+            if (g.segmentCount <= 0) continue;
+            int c = freq.get(g.segmentCount) == null ? 1 : freq.get(g.segmentCount) + 1;
+            freq.put(g.segmentCount, c);
+            if (c > bestCnt || (c == bestCnt && g.segmentCount > best)) {
+                bestCnt = c;
+                best = g.segmentCount;
+            }
+        }
+        return best;
+    }
+
+    /** 比正片众数更碎的组，才视为广告候选 */
+    private static boolean isFragmentAdCandidate(Group g, int modeSegs) {
+        if (g == null || g.segmentCount == 0) return false;
+        if (g.totalDuration > 40.0) return false;
+        // 严格：切片数必须少于众数（5→候选为 1~4 段组）
+        return g.segmentCount < modeSegs && g.segmentCount <= 6;
     }
 
     private static List<Group> buildDiscontinuityGroups(String[] lines) {
